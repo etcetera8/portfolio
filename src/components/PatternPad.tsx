@@ -67,7 +67,7 @@ export function PatternPad({ onStroke, ghost = null, denied = false, disabled = 
 
   function handleDown(event: ReactPointerEvent<SVGSVGElement>) {
     if (disabled || pointerIdRef.current !== null) return;
-    if (!event.isPrimary || event.button !== 0) return;
+    if (event.button !== 0) return;
     const position = toPad(event);
     const key = nearestKey(position[0], position[1], HIT_RADIUS);
     if (key === null) return;

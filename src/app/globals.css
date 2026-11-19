@@ -96,7 +96,8 @@ a {
 .pad {
   display: block;
   width: 100%;
-  max-width: clamp(180px, calc((100dvh - 300px) * 0.75), 300px);
+  max-width: 300px;
+  max-width: clamp(180px, calc((100dvh - 226px) * 0.75), 300px);
   margin: 0 auto;
   touch-action: none;
   user-select: none;
@@ -227,7 +228,8 @@ a {
   gap: 1ch;
   justify-content: center;
   align-items: baseline;
-  margin-top: 10px;
+  width: fit-content;
+  margin: 10px auto 0;
   color: var(--dim);
   text-shadow: none;
 }
@@ -251,13 +253,47 @@ a {
   outline-offset: 2px;
 }
 
-@media (orientation: landscape) and (max-height: 500px) {
+/* Short portrait phones: recover vertical space for the pad. */
+@media (max-height: 700px) {
+  .gate {
+    padding: 14px 16px 12px;
+  }
+
+  .gate .banner {
+    font-size: clamp(28px, 8vw, 40px);
+    margin-bottom: 4px;
+  }
+
+  .gate-prompt {
+    margin-bottom: 8px;
+  }
+
+  .gate-auth {
+    margin-bottom: 0;
+  }
+
+  .gate-hint {
+    margin-bottom: 2px;
+  }
+
+  .gate-readout {
+    margin-bottom: 6px;
+  }
+
+  .gate-type {
+    margin-top: 6px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) and (min-width: 480px) {
   .gate {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     column-gap: 24px;
     align-items: start;
-    max-width: none;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 12px 16px;
   }
 
   .gate .banner {
@@ -267,7 +303,8 @@ a {
   .pad {
     width: auto;
     max-width: none;
-    height: calc(100dvh - 108px);
+    height: calc(100vh - 64px);
+    height: calc(100dvh - 64px);
     aspect-ratio: 3 / 4;
   }
 }

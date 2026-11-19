@@ -18,6 +18,9 @@ const GHOST_AFTER = 2;
 
 type Status = "idle" | "ok" | "denied" | "granted";
 
+/** Letters typed during feedback that are replayed once the gate is idle again. */
+const QUEUE_LIMIT = 3;
+
 export function Gate({ onUnlock }: { onUnlock: () => void }) {
   const [stage, setStage] = useState(0);
   const [misses, setMisses] = useState(0);
@@ -25,62 +28,88 @@ export function Gate({ onUnlock }: { onUnlock: () => void }) {
   // Changing this remounts the pad, which clears its trace.
   const [attempt, setAttempt] = useState(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Set synchronously, so two inputs in one tick cannot both pass or miss.
+  // Refs are the synchronous source of truth for the handlers and timers (the
+  // state above mirrors them for rendering). That keeps a letter replayed from
+  // a timer looking at the new stage rather than a stale closure.
+  const stageRef = useRef(0);
+  // True from a pass or miss until the gate is idle again, and for good once granted.
   const busyRef = useRef(false);
+  const grantedRef = useRef(false);
+  const pendingLettersRef = useRef<string[]>([]);
   const onUnlockRef = useRef(onUnlock);
-  onUnlockRef.current = onUnlock;
+
+  useEffect(() => {
+    onUnlockRef.current = onUnlock;
+  });
 
   useEffect(() => {
     return () => {
       if (timer.current !== null) clearTimeout(timer.current);
+      pendingLettersRef.current = [];
     };
   }, []);
 
   function pass() {
-    if (busyRef.current) return;
     busyRef.current = true;
-    if (stage === STAGES.length - 1) {
+    if (stageRef.current === STAGES.length - 1) {
+      grantedRef.current = true;
+      pendingLettersRef.current = [];
       setStatus("granted");
       timer.current = setTimeout(() => onUnlockRef.current(), GRANT_DELAY);
       return;
     }
     setStatus("ok");
     timer.current = setTimeout(() => {
-      setStage((current) => current + 1);
+      stageRef.current += 1;
+      setStage(stageRef.current);
       setMisses(0);
-      setStatus("idle");
-      setAttempt((current) => current + 1);
-      busyRef.current = false;
+      returnToIdle();
     }, PASS_DELAY);
   }
 
   function miss() {
-    if (busyRef.current) return;
     busyRef.current = true;
     setStatus("denied");
     setMisses((current) => current + 1);
-    timer.current = setTimeout(() => {
-      setStatus("idle");
-      setAttempt((current) => current + 1);
-      busyRef.current = false;
-    }, DENY_DELAY);
+    timer.current = setTimeout(returnToIdle, DENY_DELAY);
+  }
+
+  function returnToIdle() {
+    setStatus("idle");
+    setAttempt((current) => current + 1);
+    busyRef.current = false;
+    // Replay queued letters until one passes (which makes the gate busy again).
+    while (!busyRef.current && pendingLettersRef.current.length > 0) {
+      const letter = pendingLettersRef.current.shift();
+      if (letter === STAGES[stageRef.current].toLowerCase()) pass();
+    }
+  }
+
+  /** A letter from the type-in field or the window shortcut. */
+  function enterLetter(letter: string) {
+    if (grantedRef.current) return;
+    if (busyRef.current) {
+      if (pendingLettersRef.current.length < QUEUE_LIMIT) pendingLettersRef.current.push(letter);
+      return;
+    }
+    if (letter === STAGES[stageRef.current].toLowerCase()) pass();
   }
 
   function handleStroke(path: readonly Key[]) {
-    if (busyRef.current || status !== "idle") return;
-    if (matchesShape(path, STAGES[stage])) pass();
+    if (busyRef.current) return;
+    if (matchesShape(path, STAGES[stageRef.current])) pass();
     else miss();
   }
 
-  // No dependency list: the handler closes over stage and status, so it is
-  // re-registered every render to stay current.
+  // No dependency list: the handler is re-registered every render, which is
+  // cheap and keeps it from ever closing over stale functions.
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (busyRef.current || status !== "idle") return;
       if (event.metaKey || event.ctrlKey || event.altKey) return;
       // The type-in field handles its own typing.
       if (event.target instanceof HTMLInputElement) return;
-      if (event.key?.toLowerCase() === STAGES[stage].toLowerCase()) pass();
+      if (event.key?.length !== 1) return;
+      enterLetter(event.key.toLowerCase());
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
@@ -88,7 +117,7 @@ export function Gate({ onUnlock }: { onUnlock: () => void }) {
 
   function handleType(event: ChangeEvent<HTMLInputElement>) {
     const typed = event.target.value.slice(-1).toLowerCase();
-    if (!busyRef.current && status === "idle" && typed === STAGES[stage].toLowerCase()) pass();
+    if (typed !== "") enterLetter(typed);
   }
 
   const solved = status === "granted" ? STAGES.length : stage;
@@ -121,10 +150,18 @@ export function Gate({ onUnlock }: { onUnlock: () => void }) {
           </span>
         </p>
 
-        <div className="gate-readout" role="status">
+        <div className="gate-readout" aria-hidden="true">
           <p className="gate-hint">{`> ${HINTS[stage]}`}</p>
-          <p className={status === "denied" ? "gate-status denied" : "gate-status"}>{statusText}</p>
+          <p
+            className={status === "denied" ? "gate-status denied" : "gate-status"}
+            data-testid="gate-status"
+          >
+            {statusText}
+          </p>
         </div>
+        <p className="sr-only" role="status">
+          {status === "idle" ? HINTS[stage] : statusText}
+        </p>
       </div>
 
       <div className="gate-pad">

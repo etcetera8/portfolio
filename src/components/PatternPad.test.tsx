@@ -179,4 +179,18 @@ describe("PatternPad", () => {
     expect(digit).toHaveAttribute("x", "66");
     expect(digit).toHaveAttribute("y", "72");
   });
+
+  it("lets a non-primary pointer start a stroke when none is active", () => {
+    const onStroke = vi.fn();
+    render(<PatternPad onStroke={onStroke} />);
+    const touch = (x: number, y: number, buttons = 1) => ({
+      ...mouse(x, y, buttons),
+      pointerType: "touch",
+      isPrimary: false,
+    });
+    fireEvent.pointerDown(pad(), touch(50, 50));
+    fireEvent.pointerMove(pad(), touch(50, 150));
+    fireEvent.pointerUp(pad(), touch(50, 150, 0));
+    expect(onStroke).toHaveBeenCalledWith([1, 4]);
+  });
 });
