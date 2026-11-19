@@ -594,3 +594,45 @@ a {
     grid-row: 2;
   }
 }
+
+/* ---------- boot ---------- */
+.boot {
+  max-width: 820px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 28px 16px;
+}
+
+.boot p {
+  margin: 0;
+}
+
+.boot .boot-skip {
+  margin-top: 16px;
+  color: var(--dim);
+  text-shadow: none;
+}
+
+/* ---------- shell entrance ---------- */
+.shell-enter {
+  animation: wipe 0.45s ease-out both;
+}
+
+@keyframes wipe {
+  from {
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .pad.denied,
+  .pad-ghost line,
+  .shell-enter,
+  .prompt-field:focus-within .cursor {
+    animation: none;
+  }
+}
