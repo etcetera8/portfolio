@@ -66,10 +66,13 @@ describe("MediaSlot", () => {
   });
 
   it("ignores a rejected play() promise", async () => {
-    vi.spyOn(HTMLMediaElement.prototype, "play").mockRejectedValue(new Error("blocked"));
+    const rejected = Promise.reject(new Error("blocked"));
+    const catcher = vi.spyOn(rejected, "catch");
+    vi.spyOn(HTMLMediaElement.prototype, "play").mockReturnValue(rejected);
     render(<MediaSlot project={video} />);
     await Promise.resolve();
-    await Promise.resolve();
+    // Without a .catch() the rejection would be unhandled.
+    expect(catcher).toHaveBeenCalledTimes(1);
     expect(document.querySelector("video")).not.toBeNull();
   });
 

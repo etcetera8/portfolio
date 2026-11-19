@@ -9,6 +9,11 @@ export function hasFinePointer(): boolean {
   return window.matchMedia?.("(pointer: fine)").matches === true;
 }
 
+/** True when any attached pointer is fine, e.g. a tablet with a mouse. */
+function hasAnyFinePointer(): boolean {
+  return window.matchMedia?.("(any-pointer: fine)").matches === true;
+}
+
 /** The `parker@ptl:~$` label. The host part is hidden on narrow screens. Shared by prompt and transcript. */
 export function PromptLabel({ hidden = false }: { hidden?: boolean }) {
   return (
@@ -42,6 +47,18 @@ export function Prompt({ onSubmit, history, slugs, inputRef }: Props) {
     }
   }, [inputRef]);
 
+  // The caret can move with no key or mouse event (touch caret drag, context-menu Select All).
+  useEffect(() => {
+    function onSelectionChange() {
+      const input = inputRef.current;
+      if (input && document.activeElement === input) {
+        setCaret(input.selectionStart ?? input.value.length);
+      }
+    }
+    document.addEventListener("selectionchange", onSelectionChange);
+    return () => document.removeEventListener("selectionchange", onSelectionChange);
+  }, [inputRef]);
+
   function replaceValue(next: string) {
     setValue(next);
     setCaret(next.length);
@@ -57,7 +74,8 @@ export function Prompt({ onSubmit, history, slugs, inputRef }: Props) {
     replaceValue("");
     setHistoryIndex(null);
     // Close the on-screen keyboard so the output is visible.
-    if (!hasFinePointer()) inputRef.current?.blur();
+    // any-pointer: a tablet with a keyboard and mouse keeps focus.
+    if (!hasAnyFinePointer()) inputRef.current?.blur();
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
@@ -102,7 +120,7 @@ export function Prompt({ onSubmit, history, slugs, inputRef }: Props) {
           {value.slice(0, caret)}
         </span>
         <span className="cursor" aria-hidden="true">
-          {at}
+          {at === "" ? "\u00a0" : at}
         </span>
         <span aria-hidden="true" className="prompt-after">
           {value.slice(caret + 1)}

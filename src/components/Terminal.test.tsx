@@ -12,11 +12,15 @@ afterEach(() => {
 });
 
 /** jsdom has no matchMedia; this makes `(pointer: fine)` match or not. */
-function stubPointer(fine: boolean) {
+function stubPointer(fine: boolean, anyFine = fine) {
   vi.stubGlobal(
     "matchMedia",
     vi.fn((query: string) => ({
-      matches: query.includes("pointer: fine") ? fine : false,
+      matches: query.includes("any-pointer: fine")
+        ? anyFine
+        : query.includes("pointer: fine")
+          ? fine
+          : false,
       media: query,
       addEventListener: () => {},
       removeEventListener: () => {},
@@ -226,18 +230,20 @@ describe("Terminal outputs", () => {
   it("names external links as opening in a new tab", () => {
     renderTerminal();
     run("open seattle-311");
-    expect(screen.getByRole("link", { name: /^source on github/ })).toHaveAccessibleName(
-      "source on github (opens in new tab)",
-    );
+    const link = screen.getByRole("link", { name: /^source on github/ });
+    // The space before the arrow is non-breaking so the arrow never wraps alone.
+    expect(link).toHaveAccessibleName(/^source on github\s\(opens in new tab\)$/);
   });
 
-  it("opens a project when its name is clicked, with one accessible open control", () => {
+  it("lists project names as plain text with exactly one open button per project", () => {
     renderTerminal();
     run("projects");
     expect(screen.getAllByRole("button", { name: "open seattle-311" })).toHaveLength(1);
-    fireEvent.click(screen.getByText("seattle-311"));
-    expect(screen.getByRole("heading", { level: 2, name: "Seattle 311" })).toBeInTheDocument();
-    expect(window.location.pathname).toBe("/projects/seattle-311/");
+    const name = screen.getByText("seattle-311");
+    expect(name.tagName).toBe("SPAN");
+    expect(name).toHaveClass("proj-name");
+    expect(document.querySelectorAll(".proj button")).toHaveLength(3);
+    // Clicking anywhere on the row is a real-browser concern: the chip's ::after covers the row.
   });
 });
 
@@ -257,7 +263,9 @@ describe("Terminal focus", () => {
   it("returns focus to the prompt after a chip click with a fine pointer", () => {
     stubPointer(true);
     renderTerminal();
-    fireEvent.click(screen.getByRole("button", { name: "projects" }));
+    const chip = screen.getByRole("button", { name: "projects" });
+    chip.focus();
+    fireEvent.click(chip);
     expect(input()).toHaveFocus();
   });
 
@@ -316,6 +324,24 @@ describe("Terminal focus", () => {
     expect(input()).toHaveFocus();
   });
 
+  it("keeps the prompt focused after a submit when any pointer is fine (tablet with a mouse)", () => {
+    stubPointer(false, true);
+    renderTerminal();
+    input().focus();
+    run("about");
+    expect(input()).toHaveFocus();
+  });
+
+  it("does not steal focus when a video is clicked", () => {
+    stubPointer(true);
+    renderTerminal();
+    (document.activeElement as HTMLElement).blur();
+    const video = document.createElement("video");
+    document.querySelector(".transcript")!.appendChild(video);
+    fireEvent.click(video);
+    expect(input()).not.toHaveFocus();
+  });
+
   it("turns off password-manager prompts on the input", () => {
     renderTerminal();
     expect(input()).toHaveAttribute("data-1p-ignore");
@@ -335,7 +361,7 @@ describe("Terminal caret", () => {
     renderTerminal();
     type("abot");
     expect(before()).toHaveTextContent("abot");
-    expect(cursor()).toBeEmptyDOMElement();
+    expect(cursor().textContent).toBe("\u00a0");
   });
 
   it("draws the cursor over the character at the caret", () => {
@@ -352,12 +378,33 @@ describe("Terminal caret", () => {
     run("about");
     fireEvent.keyDown(input(), { key: "ArrowUp" });
     expect(before().textContent).toBe("about");
-    expect(cursor()).toBeEmptyDOMElement();
+    expect(cursor().textContent).toBe("\u00a0");
     type("pro");
     caretTo(1);
     fireEvent.keyDown(input(), { key: "Tab" });
     expect(before().textContent).toBe("projects");
-    expect(cursor()).toBeEmptyDOMElement();
+    expect(cursor().textContent).toBe("\u00a0");
+  });
+
+  it("follows a caret that moves without a key or mouse event", () => {
+    renderTerminal();
+    type("abot");
+    input().focus();
+    // Moves the caret the way a touch drag does: no select, key or mouse event reaches React.
+    Object.defineProperty(input(), "selectionStart", { value: 1, configurable: true });
+    fireEvent(document, new Event("selectionchange"));
+    expect(before().textContent).toBe("a");
+    expect(cursor().textContent).toBe("b");
+  });
+
+  it("ignores selection changes while the prompt is not focused", () => {
+    renderTerminal();
+    type("abot");
+    caretTo(1);
+    (document.activeElement as HTMLElement).blur();
+    Object.defineProperty(input(), "selectionStart", { value: 3, configurable: true });
+    fireEvent(document, new Event("selectionchange"));
+    expect(before().textContent).toBe("a");
   });
 
   it("shows only the $ of the label so the field has room on narrow screens", () => {
@@ -406,6 +453,15 @@ describe("Terminal Tab key", () => {
     expect(input().value).toBe("pro");
   });
 
+  it("is not hijacked when Ctrl, Meta or Alt is held", () => {
+    renderTerminal();
+    type("pro");
+    for (const mod of ["ctrlKey", "metaKey", "altKey"]) {
+      expect(fireEvent.keyDown(input(), { key: "Tab", [mod]: true })).toBe(true);
+    }
+    expect(input().value).toBe("pro");
+  });
+
   it("ignores Tab during IME composition", () => {
     renderTerminal();
     type("pro");
@@ -431,6 +487,18 @@ describe("Terminal browser behaviour", () => {
     window.history.replaceState(null, "", "/somewhere-else/");
     renderTerminal("open copy-pasta");
     expect(window.location.pathname).toBe("/projects/copy-pasta/");
+  });
+
+  it("keeps the document title in step with the address bar", () => {
+    renderTerminal("open copy-pasta");
+    expect(document.title).toBe("Copy Pasta // Parker T. Lindley");
+    run("open seattle-311");
+    expect(document.title).toBe("Seattle 311 // Parker T. Lindley");
+    run("about");
+    expect(document.title).toBe("Parker T. Lindley");
+    run("open copy-pasta");
+    run("clear");
+    expect(document.title).toBe("Parker T. Lindley");
   });
 
   it("resets the address bar to / on clear", () => {

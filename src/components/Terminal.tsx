@@ -6,6 +6,7 @@ import { Output } from "@/components/outputs/Output";
 import { Prompt, PromptLabel, hasFinePointer } from "@/components/Prompt";
 import { about } from "@/content/about";
 import { projects } from "@/content/projects";
+import { SITE_NAME } from "@/lib/site";
 import { parseCommand, type CommandResult } from "@/lib/commands";
 
 type Entry = {
@@ -26,6 +27,13 @@ function syncUrl(path: string) {
   if (window.location.pathname !== path) {
     window.history.replaceState(null, "", path);
   }
+}
+
+/** The tab title follows the address bar. */
+function syncTitle(result: CommandResult) {
+  const project =
+    result.kind === "project" ? projects.find((candidate) => candidate.slug === result.slug) : undefined;
+  document.title = project ? `${project.title} // ${SITE_NAME}` : SITE_NAME;
 }
 
 type Props = {
@@ -50,6 +58,7 @@ export function Terminal({ initialCommand, onLogout }: Props) {
   // Make the address bar match what is on screen, e.g. after logout and unlock.
   useEffect(() => {
     syncUrl(urlFor(entries[0].result));
+    syncTitle(entries[0].result);
   }, []);
 
   // Bring the start of new output into view.
@@ -76,12 +85,14 @@ export function Terminal({ initialCommand, onLogout }: Props) {
       setEntries([]);
       setCleared(true);
       syncUrl("/");
+      document.title = SITE_NAME;
       return;
     }
 
     const id = nextId.current++;
     setEntries((current) => [...current, { id, input, result }]);
     syncUrl(urlFor(result));
+    syncTitle(result);
   }
 
   function runFromChip(command: string) {
@@ -92,7 +103,7 @@ export function Terminal({ initialCommand, onLogout }: Props) {
   }
 
   function handleBackgroundClick(event: MouseEvent<HTMLElement>) {
-    if ((event.target as Element).closest("a, button, input")) return;
+    if ((event.target as Element).closest("a, button, input, video")) return;
     if (window.getSelection()?.isCollapsed === false) return;
     if (hasFinePointer()) inputRef.current?.focus({ preventScroll: true });
   }
