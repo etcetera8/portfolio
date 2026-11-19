@@ -37,6 +37,15 @@
 - `complete` returns null for input that is already complete apart from trailing whitespace.
 - `src/content/types.ts` has one `Link` type (replacing `ProjectLink` and `SiteLink`), and the content arrays are exported as `readonly`.
 
+**Amendments after the Tasks 6-7 review (already applied to the code; the Task 6-7 text below shows the original versions):**
+
+- `PatternPad` tracks the one pointer that owns a stroke, ignores non-primary pointers and buttons, and cancels on a lost pointer-up or lost capture. `drawPath` in `src/test/draw.ts` sends `isPrimary`, `button`, `buttons` and `pointerType`.
+- The ghost trace is a `<g data-testid="pad-ghost">` of one `<line>` per unique segment, and is hidden while the pad shows a denied stroke.
+- `PASS_DELAY` is 300 and `DENY_DELAY` is 450.
+- The gate has a visible `or type the initials` input under the pad (accessible name "Type the initials, one letter at a time"). The hidden screen-reader sentence is gone. Pressing p, t, l anywhere on the page still works.
+- The hint and status lines sit above the pad inside one `role="status"` region, so that element's text contains both.
+- The pad's width is capped by viewport height, and short landscape screens get a two-column gate.
+
 ---
 
 ## File map
@@ -3287,6 +3296,7 @@ export function App({ initialCommand }: { initialCommand: string }) {
   .cursor,
   .pad.denied,
   .pad-ghost,
+  .pad-ghost line,
   .shell-enter,
   .prompt-field:focus-within .cursor {
     animation: none;
@@ -3548,10 +3558,10 @@ git commit -m "Add home and project pages with crawlable static content"
 - [ ] **Step 1: Install the browser**
 
 ```bash
-npx playwright install chromium
+npx playwright install chromium webkit
 ```
 
-Expected: Chromium downloads, or reports it is already installed.
+Expected: Chromium and WebKit download, or report they are already installed.
 
 - [ ] **Step 2: Write `playwright.config.ts`**
 
@@ -3576,6 +3586,8 @@ export default defineConfig({
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
     { name: "phone", use: { ...devices["Pixel 7"] } },
+    // WebKit, as the closest available stand-in for iOS Safari.
+    { name: "iphone", use: { ...devices["iPhone 13"] } },
   ],
 });
 ```
@@ -3655,8 +3667,8 @@ test("a wrong pattern is denied and the stage stays put", async ({ page }) => {
   await expect(page.getByTestId("pattern-pad")).toBeVisible();
 
   await draw(page, L);
-  await expect(page.getByRole("status")).toHaveText("ACCESS DENIED");
-  await expect(page.getByRole("status")).toHaveText("AWAITING INPUT");
+  await expect(page.getByRole("status")).toContainText("ACCESS DENIED");
+  await expect(page.getByRole("status")).toContainText("AWAITING INPUT");
   await expect(page.getByText("AUTH 1/3")).toBeVisible();
 });
 
@@ -3674,6 +3686,38 @@ test("a direct project link shows the gate, then that project; keys work as an e
 
   await expect(page.getByRole("heading", { name: "Copy Pasta" })).toBeVisible();
   await expect(page).toHaveURL(/\/projects\/copy-pasta\/$/);
+});
+
+test("the initials can be typed into the field under the pad", async ({ page }) => {
+  await page.goto("/");
+  const field = page.getByLabel("Type the initials, one letter at a time");
+  await expect(field).toBeVisible();
+
+  await field.pressSequentially("p");
+  await expect(page.getByText("AUTH 2/3")).toBeVisible();
+  await field.pressSequentially("t");
+  await expect(page.getByText("AUTH 3/3")).toBeVisible();
+  await field.pressSequentially("l");
+
+  await expect(page.getByText(HELP_HEADING)).toBeVisible();
+});
+
+test("the gate fits a small phone without scrolling", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.goto("/");
+  const pad = page.getByTestId("pattern-pad");
+  await expect(pad).toBeVisible();
+
+  for (const locator of [
+    page.getByRole("status"),
+    pad,
+    page.getByLabel("Type the initials, one letter at a time"),
+  ]) {
+    const box = await locator.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.y).toBeGreaterThanOrEqual(0);
+    expect(box!.y + box!.height).toBeLessThanOrEqual(568);
+  }
 });
 
 test("a stored unlock skips the gate, and logout locks it again", async ({ page }) => {
@@ -3734,11 +3778,11 @@ test("an unknown path shows the 404 page", async ({ page }) => {
 - [ ] **Step 4: Run the browser tests**
 
 Run: `npm run test:e2e`
-Expected: 14 passed (7 tests x 2 projects). The first run builds the site, so it takes a minute or two.
+Expected: 27 passed (9 tests x 3 projects). The first run builds the site, so it takes a minute or two.
 
 Likely failures and what they mean:
 
-- *Pattern tests fail on `phone` only:* the gate does not fit the phone viewport and the drag starts off-screen. Reduce the vertical space above the pad in `.gate` rather than changing the test.
+- *Pattern tests fail on `phone` or `iphone` only:* the gate does not fit the phone viewport and the drag starts off-screen. Reduce the vertical space above the pad in `.gate` rather than changing the test.
 - *"does not scroll sideways" fails:* something is wider than 320px. Find it with `document.querySelectorAll("*")` filtered by `scrollWidth > clientWidth` in the browser console, and fix the CSS.
 - *404 test gets status 200:* the static server is not using `out/404.html`. Confirm that file exists after the build.
 
@@ -3766,7 +3810,7 @@ npm test
 npm run test:e2e
 ```
 
-Expected: typecheck exits 0; all Vitest files pass; 14 Playwright tests pass.
+Expected: typecheck exits 0; all Vitest files pass; 27 Playwright tests pass.
 
 - [ ] **Step 2: Look at the site by hand**
 

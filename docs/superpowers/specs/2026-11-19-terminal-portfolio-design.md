@@ -67,12 +67,21 @@ T cannot be drawn in one stroke without retracing, which is why retracing is all
 ### Feedback
 
 - Correct: `OK n/3`, then the next stage. After the third: `ACCESS GRANTED`, then the wipe.
-- Wrong: the trace turns red, the pad shakes, `ACCESS DENIED`, and the pad clears after about 650ms. The stage does not reset to 1.
+- Wrong: the trace turns red, the pad shakes, `ACCESS DENIED`, and the pad clears after about 450ms. The stage does not reset to 1.
+- Feedback is brief (300ms after a correct stroke) so that a visitor who starts the next letter straight away is not ignored.
+- The hint and the status line sit above the pad, so they stay visible on small phones, and both are in one live region.
 - After two misses on a stage, a dashed ghost trace of the target shape is drawn on the pad and stays until that stage is passed.
+- Only the pointer that started a stroke can extend or finish it. A second finger, a right-click or a lost pointer-up never submits a partial pattern.
 
-### Keyboard equivalent
+### Fitting the screen
 
-Pressing the letter key for the current stage (`p`, then `t`, then `l`, case-insensitive) passes that stage. This is announced in visually hidden text for screen readers. A drag cannot be performed without a pointer, so this keeps all three stages required without excluding keyboard-only and screen-reader users.
+The whole gate (text, pad and the typed-equivalent line) fits without scrolling down to 320x568. The pad shrinks with viewport height, to a minimum of 180px wide. On short landscape screens the text and pad sit side by side.
+
+### Typed equivalent
+
+Under the pad is a visible line, `or type the initials`, with a one-character input. Typing the letter for the current stage (`p`, then `t`, then `l`, case-insensitive) passes that stage. A wrong letter does nothing and is not a miss. Pressing those keys anywhere on the page, without focusing the input, also works.
+
+A drag cannot be performed without a pointer, so this keeps all three stages required without excluding keyboard-only and screen-reader users. It is a real, focusable control rather than hidden instructions because desktop screen readers intercept single letter keys unless an input has focus, and phone screen-reader users have no keyboard until an input summons one. The visible label does not name the letters, so the puzzle is the same for everyone.
 
 ### Persistence
 
@@ -223,8 +232,8 @@ Boundaries:
 ## Testing
 
 - **Unit (Vitest):** `pattern.ts`: each shape passes when drawn forwards, backwards, in a different stroke order and with retracing; near-misses fail (missing segment, extra segment, wrong initial); pass-through keys are inserted. `commands.ts`: every command and alias, case and whitespace handling, `open` by name and by number, bad arguments, unknown input. `unlock.ts`: behaviour when storage throws.
-- **Component (React Testing Library):** gate advances through three stages, counts misses per stage, shows the ghost trace after two misses, accepts the keyboard equivalent; terminal prints output for clicks and typed input; history and tab completion.
-- **Browser (Playwright):** one test that drags P, T and L, sees the shell, opens a project and checks the URL; run at a desktop size and a phone size. One test that a stored unlock skips the gate and `logout` restores it.
+- **Component (React Testing Library):** gate advances through three stages, counts misses per stage, shows the ghost trace after two misses, accepts the typed equivalent; terminal prints output for clicks and typed input; history and tab completion.
+- **Browser (Playwright):** one test that drags P, T and L, sees the shell, opens a project and checks the URL; run in Chromium at a desktop size and a phone size, and in WebKit at an iPhone size. One test that a stored unlock skips the gate and `logout` restores it.
 
 ## Out of scope
 
