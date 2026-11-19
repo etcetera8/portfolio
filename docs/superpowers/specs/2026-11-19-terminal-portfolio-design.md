@@ -59,10 +59,10 @@ A stroke passes when its set of segments equals the target set exactly. Directio
 | Initial | Segments | One way to draw it |
 |---|---|---|
 | P | 1-4, 4-7, 1-2, 2-3, 3-6, 5-6, 4-5 | 7, 4, 1, 2, 3, 6, 5, 4 |
-| T | 1-2, 2-3, 2-5, 5-8 | 1, 2, 3, back to 2, 5, 8 |
+| T | 1-2, 2-3, 2-5, 5-8, and optionally 0-8 | 1, 2, 3, back to 2, 5, 8 (continuing to 0 is also accepted) |
 | L | 1-4, 4-7, 7-8, 8-9 | 1, 4, 7, 8, 9 |
 
-T cannot be drawn in one stroke without retracing, which is why retracing is allowed.
+T cannot be drawn in one stroke without retracing, which is why retracing is allowed. T is accepted with its stem ending at 8 or at 0, because the 0 key sits directly below 8 and running the stem through it is a natural way to draw the letter.
 
 ### Feedback
 

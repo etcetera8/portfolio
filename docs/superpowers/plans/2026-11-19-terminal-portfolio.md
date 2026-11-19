@@ -28,6 +28,15 @@
 - `globals.css` sets `color-scheme: dark` on `:root` and hides the scanlines under `prefers-contrast: more`.
 - `.gitignore` also ignores `.DS_Store` and `.env*.local`.
 
+**Amendments after the Tasks 2-5 review (already applied to the code; the Task 2-5 text below shows the original versions):**
+
+- `appendKey` returns `readonly Key[]`. Consumers hold paths as `readonly Key[]` (Tasks 6 and 7 below are updated).
+- `nearestKey`'s `radius` defaults to `HIT_RADIUS`.
+- T is accepted with its stem ending at 8 or running down to 0.
+- `open` tries its argument as a project name before trying it as a number, and `openUsage.arg` keeps the case the user typed.
+- `complete` returns null for input that is already complete apart from trailing whitespace.
+- `src/content/types.ts` has one `Link` type (replacing `ProjectLink` and `SiteLink`), and the content arrays are exported as `readonly`.
+
 ---
 
 ## File map
@@ -1428,7 +1437,7 @@ type Point = readonly [number, number];
 
 type Props = {
   /** Called on pointer-up with the keys visited, when there are at least two. */
-  onStroke: (path: Key[]) => void;
+  onStroke: (path: readonly Key[]) => void;
   /** A path to show as a dashed hint, or null for none. */
   ghost?: readonly Key[] | null;
   /** Shows the current trace as an error. */
@@ -1443,12 +1452,12 @@ function toPoints(path: readonly Key[]): string {
 
 export function PatternPad({ onStroke, ghost = null, denied = false, disabled = false }: Props) {
   // The ref is the source of truth for handlers; state mirrors it for rendering.
-  const pathRef = useRef<Key[]>([]);
+  const pathRef = useRef<readonly Key[]>([]);
   const drawingRef = useRef(false);
-  const [path, setPath] = useState<Key[]>([]);
+  const [path, setPath] = useState<readonly Key[]>([]);
   const [pointer, setPointer] = useState<Point | null>(null);
 
-  function update(next: Key[]) {
+  function update(next: readonly Key[]) {
     pathRef.current = next;
     setPath(next);
   }
@@ -1843,7 +1852,7 @@ export function Gate({ onUnlock }: { onUnlock: () => void }) {
     }, DENY_DELAY);
   }
 
-  function handleStroke(path: Key[]) {
+  function handleStroke(path: readonly Key[]) {
     if (status !== "idle") return;
     if (matchesShape(path, STAGES[stage])) pass();
     else miss();
