@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { CSSProperties } from "react";
 
 export const BOOT_LINES = [
   "PTL-BIOS v2.0.26",
@@ -46,10 +47,13 @@ export function Boot({ onDone }: { onDone: () => void }) {
 
   return (
     <main className="boot" data-testid="boot">
-      {BOOT_LINES.slice(0, count).map((line) => (
-        <p key={line}>{line}</p>
-      ))}
-      <p className="boot-skip">press any key to skip</p>
+      {/* min-height (see .boot-lines) reserves room for every line, so the hint stays put. */}
+      <div className="boot-lines" style={{ "--boot-lines": BOOT_LINES.length } as CSSProperties}>
+        {BOOT_LINES.slice(0, count).map((line) => (
+          <p key={line}>{line}</p>
+        ))}
+      </div>
+      <p className="boot-skip">tap or press any key to skip</p>
     </main>
   );
 }

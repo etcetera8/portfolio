@@ -12,36 +12,51 @@ import { clearUnlocked, isUnlocked, setUnlocked } from "@/lib/unlock";
  */
 type Phase = "init" | "boot" | "gate" | "shell";
 
+/** Reduced motion skips the boot screen entirely, so it is never painted. */
+function firstPhase(): Phase {
+  return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true ? "gate" : "boot";
+}
+
 export function App({ initialCommand }: { initialCommand: string }) {
   const [phase, setPhase] = useState<Phase>("init");
   // True when the shell was reached by solving the gate in this visit.
   const [fromGate, setFromGate] = useState(false);
+  // Read out by screen readers when the phase changes; empty otherwise.
+  const [announcement, setAnnouncement] = useState("");
 
   useEffect(() => {
-    setPhase(isUnlocked() ? "shell" : "boot");
+    setPhase(isUnlocked() ? "shell" : firstPhase());
   }, []);
 
   function handleUnlock() {
     setUnlocked();
     setFromGate(true);
+    setAnnouncement("terminal unlocked");
     setPhase("shell");
   }
 
   function handleLogout() {
     clearUnlocked();
     setFromGate(false);
-    setPhase("boot");
+    setAnnouncement("terminal locked");
+    setPhase(firstPhase());
   }
 
   return (
-    <div className="app-root">
-      {phase === "boot" && <Boot onDone={() => setPhase("gate")} />}
-      {phase === "gate" && <Gate onUnlock={handleUnlock} />}
-      {phase === "shell" && (
-        <div className={fromGate ? "shell shell-enter" : "shell"}>
-          <Terminal initialCommand={initialCommand} onLogout={handleLogout} />
-        </div>
-      )}
-    </div>
+    <>
+      {/* Outside .app-root, so the frame stays :empty until a phase mounts. */}
+      <p className="sr-only" role="status">
+        {announcement}
+      </p>
+      <div className="app-root">
+        {phase === "boot" && <Boot onDone={() => setPhase("gate")} />}
+        {phase === "gate" && <Gate onUnlock={handleUnlock} />}
+        {phase === "shell" && (
+          <div className={fromGate ? "shell shell-enter" : "shell"}>
+            <Terminal initialCommand={initialCommand} onLogout={handleLogout} />
+          </div>
+        )}
+      </div>
+    </>
   );
 }

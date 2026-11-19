@@ -36,6 +36,17 @@ describe("Boot", () => {
     expect(LINE_INTERVAL * BOOT_LINES.length).toBe(1500);
   });
 
+  it("tells touch visitors they can tap to skip", () => {
+    render(<Boot onDone={() => {}} />);
+    expect(screen.getByText("tap or press any key to skip")).toBeInTheDocument();
+  });
+
+  it("reserves the height of every line so the hint does not move", () => {
+    const { container } = render(<Boot onDone={() => {}} />);
+    const lines = container.querySelector(".boot-lines") as HTMLElement;
+    expect(lines.style.getPropertyValue("--boot-lines")).toBe(String(BOOT_LINES.length));
+  });
+
   it("skips on a key press", () => {
     const onDone = vi.fn();
     render(<Boot onDone={onDone} />);

@@ -106,6 +106,8 @@ export function Gate({ onUnlock }: { onUnlock: () => void }) {
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.metaKey || event.ctrlKey || event.altKey) return;
+      // A held key (e.g. the one that skipped boot) must not type into the gate.
+      if (event.repeat) return;
       // The type-in field handles its own typing.
       if (event.target instanceof HTMLInputElement) return;
       if (event.key?.length !== 1) return;

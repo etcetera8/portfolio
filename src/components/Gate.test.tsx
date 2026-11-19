@@ -37,6 +37,15 @@ describe("Gate", () => {
     expect(screen.getByTestId("gate-status")).toHaveTextContent("AWAITING INPUT");
   });
 
+  it("ignores auto-repeated keydowns, so a held key from the boot screen does not type", () => {
+    render(<Gate onUnlock={() => {}} />);
+    fireEvent.keyDown(window, { key: "p", repeat: true });
+    expect(screen.getByTestId("gate-status")).toHaveTextContent("AWAITING INPUT");
+    expect(screen.getByText("AUTH 1/3")).toBeInTheDocument();
+    pressKey("p");
+    expect(screen.getByTestId("gate-status")).toHaveTextContent("OK 1/3");
+  });
+
   it("advances when P is drawn", () => {
     render(<Gate onUnlock={() => {}} />);
     drawPath(pad(), EXAMPLE_PATHS.P);

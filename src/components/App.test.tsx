@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "@/components/App";
 import { GRANT_DELAY, PASS_DELAY } from "@/components/Gate";
@@ -11,6 +12,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.unstubAllGlobals();
 });
 
 function wait(ms: number) {
@@ -27,6 +29,12 @@ function unlockWithKeys() {
   wait(PASS_DELAY);
   fireEvent.keyDown(window, { key: "l" });
   wait(GRANT_DELAY);
+}
+
+function stubReducedMotion() {
+  vi.stubGlobal("matchMedia", (query: string) => ({
+    matches: query.includes("prefers-reduced-motion"),
+  }));
 }
 
 const HELP_HEADING = "AVAILABLE COMMANDS (type or click)";
@@ -85,5 +93,52 @@ describe("App", () => {
     const second = render(<App initialCommand="help" />);
     unlockWithKeys();
     expect(second.container.querySelector(".shell-enter")).not.toBeNull();
+  });
+
+  it("goes straight to the gate, with no boot screen, under reduced motion", () => {
+    stubReducedMotion();
+    render(<App initialCommand="help" />);
+    expect(screen.queryByTestId("boot")).toBeNull();
+    expect(screen.getByTestId("pattern-pad")).toBeInTheDocument();
+  });
+
+  it("goes to the gate rather than boot on logout under reduced motion", () => {
+    stubReducedMotion();
+    window.localStorage.setItem("ptl.unlocked", "1");
+    render(<App initialCommand="help" />);
+    fireEvent.click(screen.getByRole("button", { name: "logout" }));
+    expect(screen.queryByTestId("boot")).toBeNull();
+    expect(screen.getByTestId("pattern-pad")).toBeInTheDocument();
+  });
+
+  it("announces unlocking and locking", () => {
+    render(<App initialCommand="help" />);
+    expect(document.querySelector(".sr-only")).toBeEmptyDOMElement();
+    unlockWithKeys();
+    expect(screen.getByText("terminal unlocked")).toHaveAttribute("role", "status");
+    fireEvent.click(screen.getByRole("button", { name: "logout" }));
+    expect(screen.getByText("terminal locked")).toHaveAttribute("role", "status");
+    expect(screen.queryByText("terminal unlocked")).toBeNull();
+  });
+
+  it("does not announce anything when arriving already unlocked", () => {
+    window.localStorage.setItem("ptl.unlocked", "1");
+    render(<App initialCommand="help" />);
+    expect(screen.queryByText("terminal unlocked")).toBeNull();
+  });
+});
+
+describe("App first paint", () => {
+  // The server render must stay an empty frame: the unlock flag only exists in the browser,
+  // and .app-root:empty draws the placeholder cursor.
+  const EMPTY = '<p class="sr-only" role="status"></p><div class="app-root"></div>';
+
+  it("renders an empty frame on the server", () => {
+    expect(renderToString(<App initialCommand="help" />)).toBe(EMPTY);
+  });
+
+  it("renders the same empty frame when the unlock flag is set", () => {
+    window.localStorage.setItem("ptl.unlocked", "1");
+    expect(renderToString(<App initialCommand="help" />)).toBe(EMPTY);
   });
 });
