@@ -18,6 +18,16 @@
 - All styles live in `src/app/globals.css`. Component tasks append a block to it.
 - Do not add libraries that are not in this plan.
 
+**Amendments after the Task 1 review (already applied to the code; later tasks below are updated to match):**
+
+- `next.config.ts` sets `trailingSlash: true`, so pages export as `out/projects/<slug>/index.html` and work on any static host. Project URLs end in a slash: `/projects/seattle-311/`.
+- `vitest.config.ts` was renamed `vitest.config.mts`, and `tsconfig.json` includes `**/*.mts`.
+- `vitest.setup.ts` no longer has a PointerEvent fallback; jsdom 31 provides `PointerEvent`.
+- Both `next/font` calls pass `fallback: ["Menlo", "Consolas", "monospace"]`.
+- The noscript style uses `!important` on both rules.
+- `globals.css` sets `color-scheme: dark` on `:root` and hides the scanlines under `prefers-contrast: more`.
+- `.gitignore` also ignores `.DS_Store` and `.env*.local`.
+
 ---
 
 ## File map
@@ -26,8 +36,8 @@
 package.json                     scripts and dependencies
 next.config.ts                   static export
 tsconfig.json                    strict TS, "@/*" -> "src/*"
-vitest.config.ts                 jsdom, "@" alias, setup file
-vitest.setup.ts                  jest-dom matchers, cleanup, PointerEvent fallback
+vitest.config.mts                jsdom, "@" alias, setup file
+vitest.setup.ts                  jest-dom matchers, cleanup
 playwright.config.ts             builds, serves ./out, desktop + phone projects
 e2e/portfolio.spec.ts            browser tests
 src/
@@ -1611,7 +1621,7 @@ export function PatternPad({ onStroke, ghost = null, denied = false, disabled = 
 Run: `npx vitest run src/components/PatternPad.test.tsx`
 Expected: 10 passed.
 
-If strokes arrive with `NaN` coordinates, the jsdom build is not passing `clientX` through `PointerEvent`. Confirm the fallback in `vitest.setup.ts` is loading before changing the component.
+If strokes arrive with `NaN` coordinates, check that `mockPadRect()` ran before the pointer events; without it the pad's width is 0.
 
 - [ ] **Step 7: Commit**
 
@@ -2036,7 +2046,7 @@ describe("Terminal", () => {
     expect(screen.getByRole("heading", { level: 2, name: "Seattle 311" })).toBeInTheDocument();
     expect(screen.getByText("A map displaying Seattle area 311 data.")).toBeInTheDocument();
     expect(screen.getByText("[ media: Seattle 311 ]")).toBeInTheDocument();
-    expect(window.location.pathname).toBe("/projects/seattle-311");
+    expect(window.location.pathname).toBe("/projects/seattle-311/");
   });
 
   it("opens a project from its chip", () => {
@@ -2044,7 +2054,7 @@ describe("Terminal", () => {
     run("projects");
     fireEvent.click(screen.getByRole("button", { name: "open copy-pasta" }));
     expect(screen.getByRole("heading", { level: 2, name: "Copy Pasta" })).toBeInTheDocument();
-    expect(window.location.pathname).toBe("/projects/copy-pasta");
+    expect(window.location.pathname).toBe("/projects/copy-pasta/");
   });
 
   it("returns the address bar to / for any other command", () => {
@@ -2634,7 +2644,8 @@ export function Terminal({ initialCommand, onLogout }: Props) {
 
     const id = nextId.current++;
     setEntries((current) => [...current, { id, input, result }]);
-    syncUrl(result.kind === "project" ? `/projects/${result.slug}` : "/");
+    // Trailing slash matches the exported file layout (next.config.ts: trailingSlash).
+    syncUrl(result.kind === "project" ? `/projects/${result.slug}/` : "/");
   }
 
   return (
@@ -3494,15 +3505,13 @@ Expected: exits 0. The route list shows `/`, `/_not-found` and three `/projects/
 Run:
 
 ```bash
-ls out/index.html out/404.html out/projects/seattle-311.html out/projects/copy-pasta.html out/projects/trainerroad-onboarding.html
+ls out/index.html out/404.html out/projects/seattle-311/index.html out/projects/copy-pasta/index.html out/projects/trainerroad-onboarding/index.html
 grep -c "A map displaying Seattle area 311 data." out/index.html
-grep -c "Copy Pasta" out/projects/seattle-311.html
-grep -o "<title>[^<]*</title>" out/projects/seattle-311.html
+grep -c "Copy Pasta" out/projects/seattle-311/index.html
+grep -o "<title>[^<]*</title>" out/projects/seattle-311/index.html
 ```
 
-Expected: all five files listed; first count is at least `1`; second count is `0` (the project page carries only its own project); title is `<title>Seattle 311 // Parker T. Lindley</title>`.
-
-If the project files are written as `out/projects/seattle-311/index.html` instead, that is also fine; adjust the paths in these checks.
+Expected: all five files listed; first count is at least `1`; second count is `0` (the project page carries only its own project; `grep -c` exits 1 when the count is 0, which is fine here); title is `<title>Seattle 311 // Parker T. Lindley</title>`.
 
 - [ ] **Step 10: Run every unit and component test, and typecheck**
 
@@ -3525,7 +3534,7 @@ git commit -m "Add home and project pages with crawlable static content"
 
 **Files:**
 - Create: `playwright.config.ts`, `e2e/portfolio.spec.ts`
-- Modify: `vitest.config.ts` is already limited to `src/`, so no change is needed there.
+- `vitest.config.mts` is already limited to `src/`, so Vitest will not pick up the `e2e/` files.
 
 - [ ] **Step 1: Install the browser**
 
@@ -3629,7 +3638,7 @@ test("draw P, T and L, then open a project", async ({ page }) => {
   await page.getByRole("button", { name: "open seattle-311", exact: true }).click();
 
   await expect(page.getByRole("heading", { name: "Seattle 311" })).toBeVisible();
-  await expect(page).toHaveURL(/\/projects\/seattle-311$/);
+  await expect(page).toHaveURL(/\/projects\/seattle-311\/$/);
 });
 
 test("a wrong pattern is denied and the stage stays put", async ({ page }) => {
@@ -3645,7 +3654,7 @@ test("a wrong pattern is denied and the stage stays put", async ({ page }) => {
 test("a direct project link shows the gate, then that project; keys work as an equivalent", async ({
   page,
 }) => {
-  await page.goto("/projects/copy-pasta");
+  await page.goto("/projects/copy-pasta/");
   await expect(page.getByTestId("pattern-pad")).toBeVisible();
 
   await page.keyboard.press("p");
@@ -3655,7 +3664,7 @@ test("a direct project link shows the gate, then that project; keys work as an e
   await page.keyboard.press("l");
 
   await expect(page.getByRole("heading", { name: "Copy Pasta" })).toBeVisible();
-  await expect(page).toHaveURL(/\/projects\/copy-pasta$/);
+  await expect(page).toHaveURL(/\/projects\/copy-pasta\/$/);
 });
 
 test("a stored unlock skips the gate, and logout locks it again", async ({ page }) => {
@@ -3707,7 +3716,7 @@ test("the page does not scroll sideways", async ({ page }) => {
 });
 
 test("an unknown path shows the 404 page", async ({ page }) => {
-  const response = await page.goto("/projects/does-not-exist");
+  const response = await page.goto("/projects/does-not-exist/");
   expect(response?.status()).toBe(404);
   await expect(page.getByText("no such file or directory")).toBeVisible();
 });

@@ -166,7 +166,9 @@ Next.js (App Router) with React and TypeScript, built with `output: "export"` to
 | `/` | `help` |
 | `/projects/[slug]` | `open <slug>` (one page per project via `generateStaticParams`) |
 
-Running `open <slug>` in the shell calls `history.replaceState` to `/projects/<slug>`, so the address bar is always shareable. Any other command sets it back to `/`. A direct visit to a project URL shows the gate first if locked, then lands on that project.
+The export uses trailing slashes (`/projects/<slug>/`, written as `projects/<slug>/index.html`) so project URLs work on any static host without clean-URL rewriting.
+
+Running `open <slug>` in the shell calls `history.replaceState` to `/projects/<slug>/`, so the address bar is always shareable. Any other command sets it back to `/`. A direct visit to a project URL shows the gate first if locked, then lands on that project.
 
 ### Rendering and search engines
 
