@@ -161,3 +161,59 @@ a {
     transform: translateX(-4px);
   }
 }
+
+/* ---------- gate ---------- */
+.gate {
+  max-width: 440px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 28px 16px 40px;
+}
+
+.gate .banner {
+  font-size: clamp(34px, 9vw, 52px);
+}
+
+.gate-prompt {
+  margin: 0 0 16px;
+}
+
+.gate-auth {
+  display: flex;
+  gap: 2ch;
+  margin: 0 0 4px;
+  color: var(--accent);
+}
+
+.gate-slots {
+  display: inline-flex;
+  gap: 1ch;
+}
+
+.slot {
+  color: var(--dim);
+  text-shadow: none;
+}
+
+.slot.now,
+.slot.done {
+  color: var(--accent);
+}
+
+.gate-hint {
+  min-height: 1.55em;
+  margin: 0 0 8px;
+}
+
+.gate-status {
+  min-height: 1.55em;
+  margin: 8px 0 0;
+  text-align: center;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+}
+
+.gate-status.denied {
+  color: var(--error);
+  text-shadow: none;
+}
