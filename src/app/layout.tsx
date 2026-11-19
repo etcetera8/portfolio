@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, VT323 } from "next/font/google";
 import type { ReactNode } from "react";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const bodyFont = IBM_Plex_Mono({
@@ -23,9 +24,18 @@ const description =
   "Parker T. Lindley. Fullstack developer. A portfolio you unlock like a terminal.";
 
 export const metadata: Metadata = {
-  title: { default: "Parker T. Lindley", template: "%s // Parker T. Lindley" },
+  metadataBase: new URL(SITE_URL),
+  title: { default: SITE_NAME, template: `%s // ${SITE_NAME}` },
   description,
-  openGraph: { title: "Parker T. Lindley", description, type: "website" },
+  alternates: { canonical: "/" },
+  openGraph: {
+    title: SITE_NAME,
+    description,
+    type: "website",
+    url: "/",
+    siteName: SITE_NAME,
+    images: [{ url: "/opengraph-image.png", width: 1200, height: 630 }],
+  },
 };
 
 export const viewport: Viewport = {

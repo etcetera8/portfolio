@@ -6,12 +6,19 @@ type Props = {
   project: Project;
   /** False for the hidden server-rendered copy, so its media is never downloaded. */
   withMedia?: boolean;
+  /** Heading level for the title; 3 when the project sits under an h2. */
+  headingLevel?: 2 | 3;
+  /** When given, the title is a (same-tab) link to this path. */
+  titleHref?: string;
 };
 
-export function ProjectOutput({ project, withMedia = true }: Props) {
+export function ProjectOutput({ project, withMedia = true, headingLevel = 2, titleHref }: Props) {
+  const Heading = headingLevel === 3 ? "h3" : "h2";
   return (
     <article className="project">
-      <h2 className="project-title">{project.title}</h2>
+      <Heading className="project-title">
+        {titleHref ? <a href={titleHref}>{project.title}</a> : project.title}
+      </Heading>
       <dl className="facts">
         <div>
           <dt>role</dt>

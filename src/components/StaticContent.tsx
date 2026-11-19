@@ -11,16 +11,27 @@ export function StaticContent({ slug }: { slug?: string }) {
   const shown = slug ? projects.filter((project) => project.slug === slug) : projects;
 
   return (
-    <div className="static-content">
-      <p className="banner">{about.name.toUpperCase()}</p>
+    <main className="static-content">
+      <h1 className="banner">{about.name.toUpperCase()}</h1>
       <p className="meta">{about.tagline}</p>
 
       <h2 className="static-heading">about</h2>
       <AboutOutput />
 
       <h2 className="static-heading">projects</h2>
+      {slug && (
+        <p>
+          <a href="/">all projects</a>
+        </p>
+      )}
       {shown.map((project) => (
-        <ProjectOutput key={project.slug} project={project} withMedia={false} />
+        <ProjectOutput
+          key={project.slug}
+          project={project}
+          withMedia={false}
+          headingLevel={3}
+          titleHref={slug ? undefined : `/projects/${project.slug}/`}
+        />
       ))}
 
       <h2 className="static-heading">writing</h2>
@@ -28,6 +39,6 @@ export function StaticContent({ slug }: { slug?: string }) {
 
       <h2 className="static-heading">links</h2>
       <LinksOutput />
-    </div>
+    </main>
   );
 }

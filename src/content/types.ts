@@ -18,6 +18,11 @@ export type Project = {
   stack: string[];
   description: string;
   links: Link[];
+  /**
+   * True while the copy is placeholder. A draft still shows in the shell, but its page is
+   * marked noindex and it is left out of the sitemap.
+   */
+  draft?: boolean;
   /** Omit until real media exists; a placeholder slot is shown instead. */
   media?: Media;
 };

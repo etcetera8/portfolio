@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = { title: "404", alternates: { canonical: null } };
 
 export default function NotFound() {
   return (

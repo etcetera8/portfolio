@@ -3,6 +3,7 @@ import type { Project } from "@/content/types";
 export const projects: readonly Project[] = [
   {
     slug: "trainerroad-onboarding",
+    draft: true,
     title: "TrainerRoad onboarding",
     summary: "shipped onboarding flow",
     // Placeholder copy below. Replace role, stack and description with final text,

@@ -98,6 +98,19 @@ describe("ProjectOutput", () => {
     expect(container.querySelector("img.media")).not.toBeNull();
   });
 
+  it("renders the title as an h2 with no link by default (the shell)", () => {
+    render(<ProjectOutput project={base} />);
+    const heading = screen.getByRole("heading", { level: 2, name: "Demo" });
+    expect(heading.querySelector("a")).toBeNull();
+  });
+
+  it("can render the title at h3 and as an internal link", () => {
+    render(<ProjectOutput project={base} headingLevel={3} titleHref="/projects/demo/" />);
+    const link = screen.getByRole("heading", { level: 3 }).querySelector("a");
+    expect(link).toHaveAttribute("href", "/projects/demo/");
+    expect(link).toHaveTextContent("Demo");
+  });
+
   it("renders no media when withMedia is false", () => {
     const { container } = render(<ProjectOutput project={image} withMedia={false} />);
     expect(container.querySelector("img, video, .media-slot")).toBeNull();
