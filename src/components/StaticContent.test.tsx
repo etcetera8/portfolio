@@ -1,6 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { StaticContent } from "@/components/StaticContent";
+import { projects } from "@/content/projects";
 
 describe("StaticContent", () => {
   it("contains the bio, every project, the articles and the links", () => {
@@ -66,5 +67,39 @@ describe("StaticContent", () => {
   it("has no back link on the home page", () => {
     render(<StaticContent />);
     expect(screen.queryByRole("link", { name: "all projects" })).toBeNull();
+  });
+
+  describe("draft projects", () => {
+    const draft = projects.find((project) => project.draft)!;
+
+    it("shows a draft on the home page as only its linked title and summary", () => {
+      const { container } = render(<StaticContent />);
+      const heading = screen.getByRole("heading", { level: 3, name: draft.title });
+      expect(within(heading).getByRole("link")).toHaveAttribute(
+        "href",
+        `/projects/${draft.slug}/`,
+      );
+      expect(screen.getByText(draft.summary)).toBeInTheDocument();
+      const text = container.textContent ?? "";
+      expect(text).not.toContain(draft.role);
+      expect(text).not.toContain(draft.description);
+      expect(text).not.toContain(draft.stack.join(", "));
+    });
+
+    it("keeps the full block on the draft's own page", () => {
+      const { container } = render(<StaticContent slug={draft.slug} />);
+      const text = container.textContent ?? "";
+      expect(text).toContain(draft.role);
+      expect(text).toContain(draft.description);
+    });
+
+    it("leaves non-draft projects in full on the home page", () => {
+      const { container } = render(<StaticContent />);
+      const text = container.textContent ?? "";
+      for (const project of projects.filter((candidate) => !candidate.draft)) {
+        expect(text).toContain(project.role);
+        expect(text).toContain(project.description);
+      }
+    });
   });
 });

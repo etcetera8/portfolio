@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { App } from "@/components/App";
 import { StaticContent } from "@/components/StaticContent";
 import { projects } from "@/content/projects";
-import { SITE_NAME } from "@/lib/site";
+import { pageOpenGraph } from "@/lib/site";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -21,19 +21,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const project = projects.find((candidate) => candidate.slug === slug);
   if (!project) return {};
   const path = `/projects/${slug}/`;
+  // A draft's placeholder description must not reach search results or link previews.
+  const description = project.draft ? project.summary : project.description;
   return {
     title: project.title,
-    description: project.description,
+    description,
     alternates: { canonical: path },
-    // A page's own openGraph replaces the root one entirely, so the image is repeated here.
-    openGraph: {
-      title: project.title,
-      description: project.description,
-      type: "article",
-      url: path,
-      siteName: SITE_NAME,
-      images: [{ url: "/opengraph-image.png", width: 1200, height: 630 }],
-    },
+    openGraph: pageOpenGraph({ title: project.title, description, type: "article", path }),
     // Placeholder copy stays out of search results until it is written.
     ...(project.draft ? { robots: { index: false, follow: true } } : {}),
   };

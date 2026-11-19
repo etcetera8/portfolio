@@ -24,15 +24,25 @@ export function StaticContent({ slug }: { slug?: string }) {
           <a href="/">all projects</a>
         </p>
       )}
-      {shown.map((project) => (
-        <ProjectOutput
-          key={project.slug}
-          project={project}
-          withMedia={false}
-          headingLevel={3}
-          titleHref={slug ? undefined : `/projects/${project.slug}/`}
-        />
-      ))}
+      {shown.map((project) =>
+        // Placeholder copy stays off the indexable home page; its own page carries it.
+        project.draft && !slug ? (
+          <article key={project.slug} className="project">
+            <h3 className="project-title">
+              <a href={`/projects/${project.slug}/`}>{project.title}</a>
+            </h3>
+            <p>{project.summary}</p>
+          </article>
+        ) : (
+          <ProjectOutput
+            key={project.slug}
+            project={project}
+            withMedia={false}
+            headingLevel={3}
+            titleHref={slug ? undefined : `/projects/${project.slug}/`}
+          />
+        ),
+      )}
 
       <h2 className="static-heading">writing</h2>
       <WritingOutput />

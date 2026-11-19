@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, VT323 } from "next/font/google";
 import type { ReactNode } from "react";
-import { SITE_NAME, SITE_URL } from "@/lib/site";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL, TITLE_TEMPLATE } from "@/lib/site";
 import "./globals.css";
 
 const bodyFont = IBM_Plex_Mono({
@@ -20,22 +20,10 @@ const displayFont = VT323({
   fallback: ["Menlo", "Consolas", "monospace"],
 });
 
-const description =
-  "Parker T. Lindley. Fullstack developer. A portfolio you unlock like a terminal.";
-
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: SITE_NAME, template: `%s // ${SITE_NAME}` },
-  description,
-  alternates: { canonical: "/" },
-  openGraph: {
-    title: SITE_NAME,
-    description,
-    type: "website",
-    url: "/",
-    siteName: SITE_NAME,
-    images: [{ url: "/opengraph-image.png", width: 1200, height: 630 }],
-  },
+  title: { default: SITE_NAME, template: TITLE_TEMPLATE },
+  description: SITE_DESCRIPTION,
 };
 
 export const viewport: Viewport = {
