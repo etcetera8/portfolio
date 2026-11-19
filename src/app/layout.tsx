@@ -8,6 +8,7 @@ const bodyFont = IBM_Plex_Mono({
   subsets: ["latin"],
   variable: "--font-body",
   display: "swap",
+  fallback: ["Menlo", "Consolas", "monospace"],
 });
 
 const displayFont = VT323({
@@ -15,6 +16,7 @@ const displayFont = VT323({
   subsets: ["latin"],
   variable: "--font-display",
   display: "swap",
+  fallback: ["Menlo", "Consolas", "monospace"],
 });
 
 const description =
@@ -35,7 +37,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en" className={`${bodyFont.variable} ${displayFont.variable}`}>
       <body>
         <noscript>
-          <style>{".static-content{display:block}.app-root{display:none}"}</style>
+          <style>{".static-content{display:block!important}.app-root{display:none!important}"}</style>
         </noscript>
         {children}
       </body>

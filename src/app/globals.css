@@ -1,5 +1,6 @@
 /* ---------- base ---------- */
 :root {
+  color-scheme: dark;
   --bg: #020502;
   --accent: #00ff66;
   --text: #a5f5c3;
@@ -40,6 +41,12 @@ body::after {
     rgba(0, 0, 0, 0) 0 2px,
     rgba(0, 0, 0, 0.16) 2px 3px
   );
+}
+
+@media (prefers-contrast: more) {
+  body::after {
+    display: none;
+  }
 }
 
 a {
