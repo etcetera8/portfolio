@@ -636,3 +636,22 @@ a {
     animation: none;
   }
 }
+
+/* ---------- static content (crawlers and no-JavaScript) ---------- */
+.static-content {
+  display: none;
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 28px 16px 60px;
+}
+
+.static-heading {
+  margin: 24px 0 8px;
+  font: inherit;
+  color: var(--accent);
+}
+
+.static-heading::before {
+  content: "== ";
+  color: var(--dim);
+}

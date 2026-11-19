@@ -1,8 +1,11 @@
+import { App } from "@/components/App";
+import { StaticContent } from "@/components/StaticContent";
+
 export default function Home() {
   return (
-    <main className="page">
-      <h1 className="banner">PARKER T. LINDLEY</h1>
-      <p className="meta">booting soon.</p>
-    </main>
+    <>
+      <StaticContent />
+      <App initialCommand="help" />
+    </>
   );
 }
