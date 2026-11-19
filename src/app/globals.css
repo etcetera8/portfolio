@@ -96,7 +96,7 @@ a {
 .pad {
   display: block;
   width: 100%;
-  max-width: clamp(180px, calc((100dvh - 290px) * 0.75), 300px);
+  max-width: clamp(180px, calc((100dvh - 300px) * 0.75), 300px);
   margin: 0 auto;
   touch-action: none;
   user-select: none;
@@ -166,6 +166,7 @@ a {
 .gate {
   max-width: 440px;
   min-height: 100vh;
+  min-height: 100dvh;
   margin: 0 auto;
   padding: 28px 16px 40px;
 }
@@ -205,10 +206,13 @@ a {
   margin: 0 0 8px;
 }
 
+.gate-readout {
+  margin: 0 0 8px;
+}
+
 .gate-status {
   min-height: 1.55em;
-  margin: 8px 0 0;
-  text-align: center;
+  margin: 0;
   letter-spacing: 0.12em;
   color: var(--accent);
 }
@@ -216,4 +220,54 @@ a {
 .gate-status.denied {
   color: var(--error);
   text-shadow: none;
+}
+
+.gate-type {
+  display: flex;
+  gap: 1ch;
+  justify-content: center;
+  align-items: baseline;
+  margin-top: 10px;
+  color: var(--dim);
+  text-shadow: none;
+}
+
+.gate-input {
+  width: 3ch;
+  padding: 0 0.5ch;
+  border: 0;
+  border-bottom: 1px solid var(--dim);
+  border-radius: 0;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-size: 16px; /* 16px stops iOS zooming on focus */
+  text-align: center;
+  caret-color: var(--accent);
+}
+
+.gate-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .gate {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 24px;
+    align-items: start;
+    max-width: none;
+  }
+
+  .gate .banner {
+    font-size: 34px;
+  }
+
+  .pad {
+    width: auto;
+    max-width: none;
+    height: calc(100dvh - 108px);
+    aspect-ratio: 3 / 4;
+  }
 }
