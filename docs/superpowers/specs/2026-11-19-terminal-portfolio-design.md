@@ -172,7 +172,7 @@ Running `open <slug>` in the shell calls `history.replaceState` to `/projects/<s
 
 - Each page server-renders a `StaticContent` block: about, all projects, articles and links as semantic HTML. It is hidden by default and revealed by a `<noscript>` style, so visitors without JavaScript get a readable page and crawlers find the content in the HTML.
 - Each page sets title, description and Open Graph tags, so link previews do not depend on the page body.
-- The interactive app always renders the boot screen first, on the server and on the first client render, then reads `localStorage` after mount and moves to the gate or the shell. This avoids a hydration mismatch.
+- The interactive app always renders an empty CRT frame first, on the server and on the first client render. After mount it reads `localStorage` and moves to boot (locked) or straight to the shell (unlocked). This avoids a hydration mismatch and means returning visitors never see the boot text flash.
 
 ### Units
 
