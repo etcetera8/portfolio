@@ -91,3 +91,73 @@ a {
   margin: 0 auto;
   padding: 28px 16px 60px;
 }
+
+/* ---------- pattern pad ---------- */
+.pad {
+  display: block;
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: crosshair;
+}
+
+.pad-key {
+  fill: var(--dim);
+}
+
+.pad-key.on {
+  fill: var(--accent);
+}
+
+.pad-digit {
+  fill: var(--dim);
+  font-size: 13px;
+  text-anchor: middle;
+}
+
+.pad-trace {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.pad-ghost {
+  fill: none;
+  stroke: var(--dim);
+  stroke-width: 3;
+  stroke-dasharray: 5 7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  animation: march 1.2s linear infinite;
+}
+
+.pad.denied {
+  animation: shake 0.35s;
+}
+
+.pad.denied .pad-trace {
+  stroke: var(--error);
+}
+
+@keyframes march {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+@keyframes shake {
+  25% {
+    transform: translateX(-7px);
+  }
+  50% {
+    transform: translateX(7px);
+  }
+  75% {
+    transform: translateX(-4px);
+  }
+}
