@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Boot } from "@/components/Boot";
 import { Gate } from "@/components/Gate";
 import { Terminal } from "@/components/Terminal";
+import { prefersReducedMotion } from "@/lib/media";
 import { clearUnlocked, isUnlocked, setUnlocked } from "@/lib/unlock";
 
 /**
@@ -14,7 +15,7 @@ type Phase = "init" | "boot" | "gate" | "shell";
 
 /** Reduced motion skips the boot screen entirely, so it is never painted. */
 function firstPhase(): Phase {
-  return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true ? "gate" : "boot";
+  return prefersReducedMotion() ? "gate" : "boot";
 }
 
 export function App({ initialCommand }: { initialCommand: string }) {

@@ -3,7 +3,6 @@
 import { useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import {
-  HIT_RADIUS,
   KEYS,
   PAD_HEIGHT,
   PAD_WIDTH,
@@ -69,7 +68,7 @@ export function PatternPad({ onStroke, ghost = null, denied = false, disabled = 
     if (disabled || pointerIdRef.current !== null) return;
     if (event.button !== 0) return;
     const position = toPad(event);
-    const key = nearestKey(position[0], position[1], HIT_RADIUS);
+    const key = nearestKey(position[0], position[1]);
     if (key === null) return;
     event.preventDefault();
     try {
@@ -92,7 +91,7 @@ export function PatternPad({ onStroke, ghost = null, denied = false, disabled = 
     }
     const position = toPad(event);
     setPointer(position);
-    const key = nearestKey(position[0], position[1], HIT_RADIUS);
+    const key = nearestKey(position[0], position[1]);
     if (key !== null) update(appendKey(pathRef.current, key));
   }
 

@@ -8,7 +8,6 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
-  vi.unstubAllGlobals();
 });
 
 function wait(ms: number) {
@@ -58,15 +57,6 @@ describe("Boot", () => {
     const onDone = vi.fn();
     render(<Boot onDone={onDone} />);
     fireEvent.pointerDown(window);
-    expect(onDone).toHaveBeenCalledTimes(1);
-  });
-
-  it("finishes immediately when reduced motion is requested", () => {
-    vi.stubGlobal("matchMedia", (query: string) => ({
-      matches: query.includes("prefers-reduced-motion"),
-    }));
-    const onDone = vi.fn();
-    render(<Boot onDone={onDone} />);
     expect(onDone).toHaveBeenCalledTimes(1);
   });
 });

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Project } from "@/content/types";
+import { prefersReducedMotion } from "@/lib/media";
 
 /** Shows a project's media, or a fixed 16:9 placeholder when there is none or it fails. */
 export function MediaSlot({ project }: { project: Project }) {
@@ -14,7 +15,7 @@ export function MediaSlot({ project }: { project: Project }) {
   // for reduced motion get a paused video (controls remain).
   useEffect(() => {
     if (!showsVideo) return;
-    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true) return;
+    if (prefersReducedMotion()) return;
     // play() can reject (autoplay policy, unsupported source); the controls still work.
     videoRef.current?.play()?.catch(() => {});
   }, [showsVideo]);

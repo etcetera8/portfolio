@@ -22,11 +22,6 @@ export function Boot({ onDone }: { onDone: () => void }) {
   useEffect(() => {
     const skip = () => setCount(BOOT_LINES.length + 1);
 
-    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
-      skip();
-      return;
-    }
-
     const interval = window.setInterval(() => setCount((current) => current + 1), LINE_INTERVAL);
     window.addEventListener("keydown", skip);
     window.addEventListener("pointerdown", skip);
@@ -42,7 +37,6 @@ export function Boot({ onDone }: { onDone: () => void }) {
   // from the parent must not fire it again.
   useEffect(() => {
     if (finished) onDone();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [finished]);
 
   return (

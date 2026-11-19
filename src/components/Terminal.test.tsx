@@ -170,6 +170,14 @@ describe("Terminal", () => {
     expect(onLogout).toHaveBeenCalledTimes(1);
   });
 
+  it("puts the address bar and tab title back to the site's when logging out of a project", () => {
+    renderTerminal("open copy-pasta");
+    expect(window.location.pathname).toBe("/projects/copy-pasta/");
+    run("logout");
+    expect(window.location.pathname).toBe("/");
+    expect(document.title).toBe("Parker T. Lindley");
+  });
+
   it("empties the prompt after running a command", () => {
     renderTerminal();
     run("about");

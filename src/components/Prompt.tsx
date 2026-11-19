@@ -3,16 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent, KeyboardEvent, RefObject } from "react";
 import { complete } from "@/lib/commands";
-
-/** True on devices with a mouse or trackpad. Touch devices must not auto-open the keyboard. */
-export function hasFinePointer(): boolean {
-  return window.matchMedia?.("(pointer: fine)").matches === true;
-}
-
-/** True when any attached pointer is fine, e.g. a tablet with a mouse. */
-function hasAnyFinePointer(): boolean {
-  return window.matchMedia?.("(any-pointer: fine)").matches === true;
-}
+import { hasAnyFinePointer, hasFinePointer } from "@/lib/media";
 
 /** The `parker@ptl:~$` label. The host part is hidden on narrow screens. Shared by prompt and transcript. */
 export function PromptLabel({ hidden = false }: { hidden?: boolean }) {

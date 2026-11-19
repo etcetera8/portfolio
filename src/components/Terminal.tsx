@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
 import { Output } from "@/components/outputs/Output";
-import { Prompt, PromptLabel, hasFinePointer } from "@/components/Prompt";
+import { Prompt, PromptLabel } from "@/components/Prompt";
 import { about } from "@/content/about";
 import { projects } from "@/content/projects";
-import { SITE_NAME } from "@/lib/site";
+import { hasFinePointer } from "@/lib/media";
+import { SITE_NAME, tabTitle } from "@/lib/site";
 import { parseCommand, type CommandResult } from "@/lib/commands";
 
 type Entry = {
@@ -33,7 +34,7 @@ function syncUrl(path: string) {
 function syncTitle(result: CommandResult) {
   const project =
     result.kind === "project" ? projects.find((candidate) => candidate.slug === result.slug) : undefined;
-  document.title = project ? `${project.title} // ${SITE_NAME}` : SITE_NAME;
+  document.title = project ? tabTitle(project.title) : SITE_NAME;
 }
 
 type Props = {
@@ -78,6 +79,9 @@ export function Terminal({ initialCommand, onLogout }: Props) {
     setCleared(false);
 
     if (result.kind === "logout") {
+      // Leave the address bar and tab title at home, as the gate has no project.
+      syncUrl("/");
+      document.title = SITE_NAME;
       onLogout();
       return;
     }
