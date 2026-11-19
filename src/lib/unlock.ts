@@ -1,4 +1,4 @@
-const STORAGE_KEY = "ptl.unlocked";
+export const STORAGE_KEY = "ptl.unlocked";
 
 // Storage can be missing or throw (private windows, blocked site data).
 // In every such case the gate simply shows again.
