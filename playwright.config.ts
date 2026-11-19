@@ -1,18 +1,22 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const PORT = 3100;
+// Its own port (`npm run preview` keeps 3100), so a leftover preview server is never tested.
+const PORT = 3101;
+const ORIGIN = `http://localhost:${PORT}`;
 
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
   use: {
-    baseURL: `http://localhost:${PORT}`,
+    baseURL: ORIGIN,
   },
   // Tests run against the real static export, served the way a static host would.
   webServer: {
     command: `npm run build && npx serve out -l ${PORT}`,
-    url: `http://localhost:${PORT}`,
-    reuseExistingServer: !process.env.CI,
+    url: ORIGIN,
+    env: { NEXT_PUBLIC_SITE_URL: ORIGIN },
+    // Always build and serve fresh, never a stale export.
+    reuseExistingServer: false,
     timeout: 180_000,
   },
   projects: [
