@@ -27,7 +27,7 @@ Chosen direction: "phosphor, toned down".
 | Background | `#020502` |
 | Accent (prompt, commands, banner) | `#00ff66` |
 | Body text | `#a5f5c3` |
-| Dim text (hints, numbering, tags) | `#0f7f3e` |
+| Dim text (hints, numbering, tags) | `#12903f` (slightly brighter than the mockup's `#0f7f3e` so it meets AA contrast) |
 | Error | `#ff4444` |
 | Glow | `text-shadow: 0 0 2px rgba(0,255,102,.28)` |
 | Scanlines | 1px dark line every 3px at 16% opacity, fixed overlay, `pointer-events: none` |
