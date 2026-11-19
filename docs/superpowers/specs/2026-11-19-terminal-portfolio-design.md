@@ -1,7 +1,7 @@
 # Terminal portfolio: design
 
 Date: 2026-11-19
-Status: approved in brainstorming, awaiting spec review
+Status: implemented on branch `terminal-portfolio`. This document was kept up to date through the build and its reviews, so it describes the site as built.
 
 ## Purpose
 
@@ -97,14 +97,14 @@ The gate is a toy. All content is present in the delivered HTML so search engine
 
 | Command | Aliases | Output |
 |---|---|---|
-| `help` | `ls` | The command list. Each command is a clickable chip with a one-line description. |
+| `help` | `ls` | The commands that need no argument (`about`, `projects`, `writing`, `links`, `clear`, `logout`), each as a clickable chip with a one-line description. `open` is reached through the chips in the `projects` list. |
 | `about` | `whoami` | Bio text. |
 | `projects` | | Numbered list of featured projects: name, one-line description, stack tag, `open` chip. |
 | `open <name or number>` | | Project detail: title, role, stack, description, media slot, repo and live links. |
 | `writing` | | Featured articles (title, year, link) and a "more on Medium" link. |
 | `links` | | GitHub, LinkedIn, Medium. |
 | `clear` | | Empties the output. |
-| `logout` | | Removes the unlock flag and returns to boot. |
+| `logout` | | Removes the unlock flag, resets the address bar and tab title to the home page, and returns to boot. |
 
 - Input is trimmed and case-insensitive.
 - Unknown input prints `command not found: <input>. type help`.
@@ -118,14 +118,17 @@ Clicking a chip runs its command, and the transcript reads the same as if it had
 ### Typing
 
 - Enter runs the command.
-- Up and Down walk the command history for the session.
-- Tab completes a command name, or a project name after `open`, when there is exactly one match.
+- Up and Down walk the command history. History lasts until `logout` or a page reload. A half-typed line is kept and restored when the visitor arrows back down.
+- Tab completes a command name, or a project name after `open`, when there is exactly one match. With text in the prompt, Tab never leaves the prompt; on an empty prompt it moves focus on as normal.
+- The block cursor sits at the caret, including when the caret is moved into the middle of the line.
 - The prompt is a real `<input>`. It is focused automatically on devices with a fine pointer, and not on touch devices, so the on-screen keyboard does not cover the page on arrival.
 - New output scrolls into view.
 
 ### Accessibility
 
-- The output region is `aria-live="polite"`.
+- The transcript is a polite live `log` region. `clear` announces "screen cleared".
+- Entering and leaving the shell is announced ("terminal unlocked", "terminal locked").
+- External links show an arrow and tell screen readers they open in a new tab.
 - Body text and accent colours meet WCAG AA contrast against the background.
 - Focus is visible on chips, links and the prompt.
 
@@ -177,14 +180,16 @@ Next.js (App Router) with React and TypeScript, built with `output: "export"` to
 
 The export uses trailing slashes (`/projects/<slug>/`, written as `projects/<slug>/index.html`) so project URLs work on any static host without clean-URL rewriting.
 
-Running `open <slug>` in the shell calls `history.replaceState` to `/projects/<slug>/`, so the address bar is always shareable. Any other command sets it back to `/`. A direct visit to a project URL shows the gate first if locked, then lands on that project.
+Running `open <slug>` in the shell calls `history.replaceState` to `/projects/<slug>/` and sets the tab title to the project's, so the address bar is always shareable. Any other command, including `logout`, sets both back to the home page's.
+
+The site must be served from the root of its domain. Subpath hosting is not supported. A direct visit to a project URL shows the gate first if locked, then lands on that project.
 
 ### Rendering and search engines
 
-- Each page server-renders a `StaticContent` block: about, all projects, articles and links as semantic HTML. It is hidden by default and revealed by a `<noscript>` style, so visitors without JavaScript get a readable page and crawlers find the content in the HTML.
-- Each page sets title, description, a canonical URL and Open Graph tags (including a shared 1200x630 preview image), so link previews do not depend on the page body. Absolute URLs are built from `NEXT_PUBLIC_SITE_URL`, set at build time; it defaults to `http://localhost:3000` until a domain exists.
+- Each page server-renders a `StaticContent` block as semantic HTML: about, projects, articles and links. The home page lists every project; a project page shows only its own project and a link back. It is hidden by default and revealed by a `<noscript>` style, so visitors without JavaScript get a readable page and crawlers find the content in the HTML.
+- Each page sets title, description, a canonical URL and Open Graph tags (including a shared 1200x630 preview image), so link previews do not depend on the page body. Absolute URLs are built from `NEXT_PUBLIC_SITE_URL`. A production build fails with an explanatory message if it is unset or is not a bare origin, so a deployed site can never carry `localhost` links. `npm run build:local` sets it to the local preview address.
 - The static block links the home page to each project page and back, and the build emits `sitemap.xml` and `robots.txt`, so crawlers can reach every page.
-- A project marked `draft: true` in its content entry is `noindex` and left out of the sitemap while its copy is placeholder. It still appears in the shell.
+- A project marked `draft: true` in its content entry is `noindex` and left out of the sitemap while its copy is placeholder, and the home page's static block shows only its title and one-line summary. It still appears in full in the shell.
 - Until the app mounts, the page shows a single `_` in the accent colour instead of a blank screen.
 - The interactive app always renders an empty CRT frame first, on the server and on the first client render. After mount it reads `localStorage` and moves to boot (locked) or straight to the shell (unlocked). This avoids a hydration mismatch and means returning visitors never see the boot text flash.
 
@@ -193,25 +198,33 @@ Running `open <slug>` in the shell calls `history.replaceState` to `/projects/<s
 ```
 src/
   app/
-    layout.tsx              fonts, metadata, CRT frame
+    layout.tsx              fonts, shared metadata, noscript style
     page.tsx                "/" : StaticContent + App(initialCommand="help")
-    projects/[slug]/page.tsx
-    globals.css             colour tokens, scanlines, base type
+    projects/[slug]/page.tsx  one static page per project, own metadata
+    not-found.tsx           404
+    sitemap.ts  robots.ts   crawl files, built from SITE_URL
+    opengraph-image.png  icon.png
+    globals.css             every style: tokens, scanlines, gate, terminal
   content/
-    about.ts  projects.ts  articles.ts  links.ts
+    types.ts  about.ts  projects.ts  articles.ts  links.ts
   lib/
-    pattern.ts              shapes, segment recording, matching (pure)
-    commands.ts             parse input -> typed result (pure)
+    pattern.ts              keypad geometry, stroke recording, matching (pure)
+    commands.ts             parse input -> typed result; tab completion (pure)
     unlock.ts               localStorage read/write/clear, safe when unavailable
+    site.ts                 SITE_URL, SITE_NAME, shared metadata helpers
   components/
-    App.tsx                 phase state: boot -> gate -> shell
+    App.tsx                 phase state: init -> boot -> gate -> shell
     Boot.tsx
-    Gate.tsx                stage tracking, hints, keyboard equivalent
+    Gate.tsx                stages, misses, ghost trace, typed equivalent
     PatternPad.tsx          SVG keypad, pointer handling, trace rendering
-    Terminal.tsx            transcript, scroll, runs commands
-    Prompt.tsx              input, history, tab completion
-    StaticContent.tsx
+    Terminal.tsx            transcript, scroll, runs commands, URL and title
+    Prompt.tsx              input, caret, history, tab completion
+    StaticContent.tsx       crawler and no-JavaScript content
     outputs/                one renderer per command result
+  test/
+    draw.ts                 test helper: draw a path with pointer events
+e2e/
+  portfolio.spec.ts         browser tests
 ```
 
 Boundaries:
@@ -236,7 +249,9 @@ Boundaries:
 
 - **Unit (Vitest):** `pattern.ts`: each shape passes when drawn forwards, backwards, in a different stroke order and with retracing; near-misses fail (missing segment, extra segment, wrong initial); pass-through keys are inserted. `commands.ts`: every command and alias, case and whitespace handling, `open` by name and by number, bad arguments, unknown input. `unlock.ts`: behaviour when storage throws.
 - **Component (React Testing Library):** gate advances through three stages, counts misses per stage, shows the ghost trace after two misses, accepts the typed equivalent; terminal prints output for clicks and typed input; history and tab completion.
-- **Browser (Playwright):** one test that drags P, T and L, sees the shell, opens a project and checks the URL; run in Chromium at a desktop size and a phone size, and in WebKit at an iPhone size. One test that a stored unlock skips the gate and `logout` restores it.
+- **Browser (Playwright):** run against the real static export in Chromium at a desktop size and a phone size, and in WebKit at an iPhone size. Covers drawing P, T and L and opening a project; a real unlock surviving a reload; denial and the ghost trace; direct project links; the typed equivalent; the gate fitting a 320x568 screen; `logout`; typed commands; no sideways scroll at 320px; reduced motion; the no-JavaScript page; page metadata, sitemap and robots; the 404 page; and, in Chromium's phone emulation, drawing with real touch events.
+
+Not covered by automation, and to be checked by hand: drawing with a finger on real iOS and Android devices, the typed field with a phone keyboard, screen readers, and link previews in real messaging apps.
 
 ## Out of scope
 
