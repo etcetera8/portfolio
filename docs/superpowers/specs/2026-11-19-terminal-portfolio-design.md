@@ -36,7 +36,7 @@ Chosen direction: "phosphor, toned down".
 - Blinking block cursor at the prompt.
 - No background rain anywhere.
 - Single column on narrow screens. No horizontal scrolling at 320px width.
-- `prefers-reduced-motion: reduce` disables the boot typing, the wipe, the ghost-trace animation and the cursor blink. Content appears immediately.
+- `prefers-reduced-motion: reduce` skips the boot screen entirely and disables the wipe, the pad shake, the ghost-trace animation and the cursor blink. Content appears immediately.
 
 ## The gate
 
@@ -113,7 +113,7 @@ The gate is a toy. All content is present in the delivered HTML so search engine
 
 ### Clicking
 
-Clicking a chip writes the command into the prompt and runs it, so the transcript reads the same as if it had been typed. Chips are `<button>` elements and reachable by Tab.
+Clicking a chip runs its command, and the transcript reads the same as if it had been typed. Chips are `<button>` elements and reachable by Tab. On touch screens chips are at least 41px tall, and in the project list the whole row opens the project. After a chip click on a desktop, focus returns to the prompt so the visitor can keep typing.
 
 ### Typing
 
@@ -182,7 +182,10 @@ Running `open <slug>` in the shell calls `history.replaceState` to `/projects/<s
 ### Rendering and search engines
 
 - Each page server-renders a `StaticContent` block: about, all projects, articles and links as semantic HTML. It is hidden by default and revealed by a `<noscript>` style, so visitors without JavaScript get a readable page and crawlers find the content in the HTML.
-- Each page sets title, description and Open Graph tags, so link previews do not depend on the page body.
+- Each page sets title, description, a canonical URL and Open Graph tags (including a shared 1200x630 preview image), so link previews do not depend on the page body. Absolute URLs are built from `NEXT_PUBLIC_SITE_URL`, set at build time; it defaults to `http://localhost:3000` until a domain exists.
+- The static block links the home page to each project page and back, and the build emits `sitemap.xml` and `robots.txt`, so crawlers can reach every page.
+- A project marked `draft: true` in its content entry is `noindex` and left out of the sitemap while its copy is placeholder. It still appears in the shell.
+- Until the app mounts, the page shows a single `_` in the accent colour instead of a blank screen.
 - The interactive app always renders an empty CRT frame first, on the server and on the first client render. After mount it reads `localStorage` and moves to boot (locked) or straight to the shell (unlocked). This avoids a hydration mismatch and means returning visitors never see the boot text flash.
 
 ### Units

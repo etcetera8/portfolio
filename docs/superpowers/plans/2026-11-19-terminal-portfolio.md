@@ -52,6 +52,15 @@
 - `ProjectOutput` takes `withMedia` (default true). `StaticContent` passes `withMedia={false}` so hidden media never downloads.
 - The prompt tracks the caret position, focuses itself after a chip click on fine pointers, and handles Tab without throwing focus out of the page.
 - The transcript is `role="log"`.
+
+**Amendments after the Tasks 9-10 review (already applied to the code; the Task 9-10 text below shows the original versions):**
+
+- `.app-root:empty::before` shows a `_` until the app mounts. Under reduced motion the app goes straight to the gate with no boot screen.
+- `src/lib/site.ts` exports `SITE_URL` (from `NEXT_PUBLIC_SITE_URL`, default `http://localhost:3000`) and `SITE_NAME`. Pages set `metadataBase`, canonical URLs, `og:url`, `og:image` and a site name. `src/app/opengraph-image.png`, `src/app/icon.png`, `src/app/sitemap.ts` and `src/app/robots.ts` exist.
+- A project with `draft: true` (currently `trainerroad-onboarding`) is `noindex` and left out of the sitemap, but appears in the shell as normal.
+- `StaticContent` is a `<main>` with an `<h1>` banner, links each project title to its page on `/`, and links back to `/` on project pages.
+- In the project list the whole row is the hit area of its `open` chip.
+- `document.title` follows the address bar when a project is opened.
 - The pad's width is capped by viewport height, and short landscape screens get a two-column gate.
 
 ---
@@ -3778,6 +3787,32 @@ test("the page does not scroll sideways", async ({ page }) => {
   expect(overflow).toBeLessThanOrEqual(0);
 });
 
+test("with reduced motion the boot screen is skipped", async ({ browser }) => {
+  const context = await browser.newContext({ reducedMotion: "reduce" });
+  const page = await context.newPage();
+  await page.goto("/");
+  await expect(page.getByTestId("pattern-pad")).toBeVisible();
+  await expect(page.getByTestId("boot")).toHaveCount(0);
+  await context.close();
+});
+
+test("without JavaScript the plain content is shown and pages link to each other", async ({ browser }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const page = await context.newPage();
+  await page.goto("/");
+
+  await expect(page.getByRole("heading", { level: 1, name: "PARKER T. LINDLEY" })).toBeVisible();
+  await expect(page.getByTestId("pattern-pad")).toHaveCount(0);
+
+  await page.getByRole("link", { name: "Seattle 311" }).click();
+  await expect(page).toHaveURL(/\/projects\/seattle-311\/$/);
+  await expect(page.getByText("A map displaying Seattle area 311 data.")).toBeVisible();
+
+  await page.getByRole("link", { name: "all projects" }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await context.close();
+});
+
 test("an unknown path shows the 404 page", async ({ page }) => {
   const response = await page.goto("/projects/does-not-exist/");
   expect(response?.status()).toBe(404);
@@ -3788,7 +3823,9 @@ test("an unknown path shows the 404 page", async ({ page }) => {
 - [ ] **Step 4: Run the browser tests**
 
 Run: `npm run test:e2e`
-Expected: 27 passed (9 tests x 3 projects). The first run builds the site, so it takes a minute or two.
+Expected: 33 passed (11 tests x 3 projects). The first run builds the site, so it takes a minute or two.
+
+The two tests that call `browser.newContext` do not inherit the project's device settings or `baseURL`. If `page.goto("/")` fails there with an invalid URL, pass `baseURL` (from the `baseURL` fixture) into `newContext`.
 
 Likely failures and what they mean:
 
@@ -3820,7 +3857,7 @@ npm test
 npm run test:e2e
 ```
 
-Expected: typecheck exits 0; all Vitest files pass; 27 Playwright tests pass.
+Expected: typecheck exits 0; all Vitest files pass; 33 Playwright tests pass.
 
 - [ ] **Step 2: Look at the site by hand**
 
