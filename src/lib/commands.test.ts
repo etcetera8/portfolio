@@ -63,6 +63,44 @@ describe("parseCommand", () => {
   });
 });
 
+describe("parseCommand details", () => {
+  it("tries a slug name before a number", () => {
+    expect(parseCommand("open 311", ["a", "311"])).toEqual({ kind: "project", slug: "311" });
+  });
+
+  it("keeps the typed case in openUsage", () => {
+    expect(parseCommand("open Nope", SLUGS)).toEqual({ kind: "openUsage", arg: "Nope" });
+  });
+
+  it("ignores extra words", () => {
+    expect(parseCommand("logout now", SLUGS)).toEqual({ kind: "logout" });
+    expect(parseCommand("ls -la", SLUGS)).toEqual({ kind: "help" });
+    expect(parseCommand("open 2 3", SLUGS)).toEqual({ kind: "project", slug: "seattle-311" });
+  });
+});
+
+describe("complete details", () => {
+  it("returns null when already complete apart from trailing whitespace", () => {
+    expect(complete("open copy-pasta ", SLUGS)).toBeNull();
+  });
+
+  it("handles open, leading whitespace and ambiguity", () => {
+    expect(complete("open", SLUGS)).toBe("open ");
+    expect(complete("o", SLUGS)).toBe("open ");
+    expect(complete("  pro", SLUGS)).toBe("projects");
+    expect(complete("open s", ["seattle-311", "site"])).toBeNull();
+  });
+
+  it("completes every command from a unique prefix", () => {
+    const names = ["help", "about", "projects", "open", "writing", "links", "clear", "logout"];
+    for (const name of names) {
+      const prefix = name.slice(0, -1);
+      expect(complete(prefix, SLUGS)).toBe(name === "open" ? "open " : name);
+      expect(parseCommand(name, SLUGS).kind).not.toBe("notFound");
+    }
+  });
+});
+
 describe("complete", () => {
   it("completes a unique command prefix", () => {
     expect(complete("pro", SLUGS)).toBe("projects");

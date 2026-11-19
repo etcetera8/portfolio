@@ -30,6 +30,13 @@ describe("nearestKey", () => {
     expect(nearestKey(100, 100, 34)).toBeNull();
     expect(nearestKey(50, 350, 34)).toBeNull();
   });
+
+  it("respects the radius boundary and defaults the radius", () => {
+    expect(nearestKey(84, 50, 34)).toBe(1);
+    expect(nearestKey(85, 50, 34)).toBeNull();
+    expect(nearestKey(85, 50, 40)).toBe(1);
+    expect(nearestKey(52, 47)).toBe(1);
+  });
 });
 
 describe("segmentKey", () => {
@@ -76,6 +83,10 @@ describe("appendKey", () => {
     expect(appendKey(path, 4)).toBe(path);
   });
 
+  it("returns its input unchanged when the key is already last", () => {
+    expect(appendKey(EXAMPLE_PATHS.L, 9)).toBe(EXAMPLE_PATHS.L);
+  });
+
   it("allows going back over a key", () => {
     expect(appendKey([1, 2, 3], 2)).toEqual([1, 2, 3, 2]);
   });
@@ -117,7 +128,24 @@ describe("matchesShape", () => {
 
   it("rejects a shape with an extra segment", () => {
     expect(matchesShape([1, 4, 7, 8, 9, 6], "L")).toBe(false);
-    expect(matchesShape([1, 2, 3, 2, 5, 8, 0], "T")).toBe(false);
+    expect(matchesShape([1, 2, 3, 2, 5, 8, 9], "T")).toBe(false);
+  });
+
+  it("accepts a T whose stem runs down to 0", () => {
+    expect(matchesShape([1, 2, 3, 2, 5, 8, 0], "T")).toBe(true);
+    expect(matchesShape([0, 8, 5, 2, 1, 2, 3], "T")).toBe(true);
+  });
+
+  it("rejects the right number of segments in the wrong places", () => {
+    expect(matchesShape([1, 4, 7, 8, 5], "L")).toBe(false);
+    expect(matchesShape([1, 2, 3, 2, 5, 4], "T")).toBe(false);
+  });
+
+  it("matches letters built from sparse pointer hits", () => {
+    const build = (hits: Key[]) => hits.reduce<readonly Key[]>((path, key) => appendKey(path, key), []);
+    expect(matchesShape(build([7, 1, 3, 6, 4]), "P")).toBe(true);
+    expect(matchesShape(build([1, 3, 2, 8]), "T")).toBe(true);
+    expect(matchesShape(build([1, 7, 9]), "L")).toBe(true);
   });
 
   it("rejects the wrong initial", () => {

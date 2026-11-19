@@ -4,7 +4,7 @@ export type Media = {
   alt: string;
 };
 
-export type ProjectLink = {
+export type Link = {
   label: string;
   href: string;
 };
@@ -17,7 +17,7 @@ export type Project = {
   role: string;
   stack: string[];
   description: string;
-  links: ProjectLink[];
+  links: Link[];
   /** Omit until real media exists; a placeholder slot is shown instead. */
   media?: Media;
 };
@@ -25,10 +25,5 @@ export type Project = {
 export type Article = {
   title: string;
   year: number;
-  href: string;
-};
-
-export type SiteLink = {
-  label: string;
   href: string;
 };

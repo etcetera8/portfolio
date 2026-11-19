@@ -27,7 +27,11 @@ export function keyPosition(key: Key): readonly [number, number] {
   return [50 + column * 100, 50 + row * 100];
 }
 
-export function nearestKey(x: number, y: number, radius: number): Key | null {
+/**
+ * `x` and `y` are in pad units (0..PAD_WIDTH, 0..PAD_HEIGHT). Returns the key
+ * whose centre is within `radius` of the point, or null.
+ */
+export function nearestKey(x: number, y: number, radius: number = HIT_RADIUS): Key | null {
   let best: Key | null = null;
   let bestDistance = radius * radius;
   for (const key of KEYS) {
@@ -76,10 +80,10 @@ export function between(a: Key, b: Key): Key[] {
 }
 
 /** Adds `next` to the path, inserting any keys passed over on the way. */
-export function appendKey(path: readonly Key[], next: Key): Key[] {
+export function appendKey(path: readonly Key[], next: Key): readonly Key[] {
   if (path.length === 0) return [next];
   const last = path[path.length - 1];
-  if (last === next) return path as Key[];
+  if (last === next) return path;
   return [...path, ...between(last, next), next];
 }
 
@@ -91,10 +95,14 @@ export function segmentsOf(path: readonly Key[]): Set<string> {
   return segments;
 }
 
-const SHAPES: Record<Initial, readonly string[]> = {
-  P: ["1-4", "4-7", "1-2", "2-3", "3-6", "5-6", "4-5"],
-  T: ["1-2", "2-3", "2-5", "5-8"],
-  L: ["1-4", "4-7", "7-8", "8-9"],
+/** Each initial maps to the accepted segment sets; a drawing must equal one exactly. */
+const SHAPES: Record<Initial, readonly (readonly string[])[]> = {
+  P: [["1-4", "4-7", "1-2", "2-3", "3-6", "5-6", "4-5"]],
+  T: [
+    ["1-2", "2-3", "2-5", "5-8"],
+    ["1-2", "2-3", "2-5", "5-8", "0-8"],
+  ],
+  L: [["1-4", "4-7", "7-8", "8-9"]],
 };
 
 /** One valid way to draw each initial. Used for the ghost trace and in tests. */
@@ -106,6 +114,7 @@ export const EXAMPLE_PATHS: Record<Initial, readonly Key[]> = {
 
 export function matchesShape(path: readonly Key[], initial: Initial): boolean {
   const drawn = segmentsOf(path);
-  const target = SHAPES[initial];
-  return drawn.size === target.length && target.every((segment) => drawn.has(segment));
+  return SHAPES[initial].some(
+    (target) => drawn.size === target.length && target.every((segment) => drawn.has(segment)),
+  );
 }

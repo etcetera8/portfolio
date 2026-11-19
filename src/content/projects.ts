@@ -1,6 +1,6 @@
 import type { Project } from "@/content/types";
 
-export const projects: Project[] = [
+export const projects: readonly Project[] = [
   {
     slug: "trainerroad-onboarding",
     title: "TrainerRoad onboarding",

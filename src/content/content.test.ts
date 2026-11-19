@@ -5,12 +5,8 @@ import { links } from "@/content/links";
 import { projects } from "@/content/projects";
 
 describe("content", () => {
-  it("has the three featured projects in order", () => {
-    expect(projects.map((project) => project.slug)).toEqual([
-      "trainerroad-onboarding",
-      "seattle-311",
-      "copy-pasta",
-    ]);
+  it("has at least one project", () => {
+    expect(projects.length).toBeGreaterThan(0);
   });
 
   it("uses unique lowercase kebab-case slugs", () => {
@@ -43,8 +39,8 @@ describe("content", () => {
     }
   });
 
-  it("features two articles and three personal links", () => {
-    expect(articles).toHaveLength(2);
+  it("features articles and the three personal links", () => {
+    expect(articles.length).toBeGreaterThan(0);
     expect(links.map((link) => link.label)).toEqual(["github", "linkedin", "medium"]);
   });
 

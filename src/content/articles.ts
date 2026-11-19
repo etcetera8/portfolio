@@ -1,6 +1,6 @@
 import type { Article } from "@/content/types";
 
-export const articles: Article[] = [
+export const articles: readonly Article[] = [
   {
     title: "Adding React Electron Event Handlers from React Code to the App",
     year: 2020,

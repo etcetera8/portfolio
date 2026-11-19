@@ -51,19 +51,23 @@ const ALIASES = new Map<string, string>([
 
 function openResult(arg: string | null, slugs: readonly string[]): CommandResult {
   if (arg === null) return { kind: "openUsage", arg: null };
+  const lower = arg.toLowerCase();
+  const byName = slugs.find((slug) => slug === lower);
+  if (byName !== undefined) return { kind: "project", slug: byName };
   if (/^\d+$/.test(arg)) {
     const slug = slugs[Number(arg) - 1];
-    return slug === undefined ? { kind: "openUsage", arg } : { kind: "project", slug };
+    if (slug !== undefined) return { kind: "project", slug };
   }
-  return slugs.includes(arg) ? { kind: "project", slug: arg } : { kind: "openUsage", arg };
+  return { kind: "openUsage", arg };
 }
 
 export function parseCommand(input: string, slugs: readonly string[]): CommandResult {
   const trimmed = input.trim();
   if (trimmed === "") return { kind: "empty" };
 
-  const words = trimmed.toLowerCase().split(/\s+/);
-  const name = ALIASES.get(words[0]) ?? words[0];
+  const words = trimmed.split(/\s+/);
+  const first = words[0].toLowerCase();
+  const name = ALIASES.get(first) ?? first;
 
   if (name === "open") return openResult(words[1] ?? null, slugs);
   return SIMPLE.get(name) ?? { kind: "notFound", input: trimmed };
@@ -89,5 +93,5 @@ export function complete(input: string, slugs: readonly string[]): string | null
     if (matches.length === 1) completed = matches[0] === "open" ? "open " : matches[0];
   }
 
-  return completed !== null && completed !== text ? completed : null;
+  return completed !== null && completed !== text.trimEnd() ? completed : null;
 }

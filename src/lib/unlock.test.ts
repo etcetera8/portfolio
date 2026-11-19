@@ -44,4 +44,14 @@ describe("unlock storage", () => {
     expect(() => setUnlocked()).not.toThrow();
     expect(() => clearUnlocked()).not.toThrow();
   });
+
+  it("stays locked and does not throw when reading window.localStorage throws", () => {
+    vi.spyOn(window, "localStorage", "get").mockImplementation(() => {
+      throw new DOMException("denied", "SecurityError");
+    });
+
+    expect(isUnlocked()).toBe(false);
+    expect(() => setUnlocked()).not.toThrow();
+    expect(() => clearUnlocked()).not.toThrow();
+  });
 });
