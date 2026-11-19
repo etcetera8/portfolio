@@ -45,7 +45,7 @@ NEXT_PUBLIC_SITE_URL=https://example.com npm run build
 All content is in `src/content/`:
 
 - `about.ts`: name, tagline and bio.
-- `projects.ts`: the projects, in display order. Adding a project is one new entry; its page, its sitemap entry and its shell commands (`open <slug>`, `open <number>`) follow from it.
+- `projects.ts`: the projects, in display order. When a project has a deployed site, list it first in `links` with the label `live site`. Adding a project is one new entry; its page, its sitemap entry and its shell commands (`open <slug>`, `open <number>`) follow from it.
 - `articles.ts`: writing, with year and link.
 - `links.ts`: profile links.
 
@@ -57,13 +57,12 @@ To add media to a project, put the file under `public/` (for example `public/med
 media: { kind: "video", src: "/media/seattle-311.mp4", alt: "Short description of what the video shows" },
 ```
 
-`kind` is `"video"` or `"image"`. Without `media`, a placeholder slot is shown. A video that fails to load falls back to the placeholder.
+`kind` is `"video"` or `"image"`. Images display in a 16:9 box, so a 1280x720 screenshot fits exactly. Without `media`, a placeholder slot is shown. A video that fails to load falls back to the placeholder.
 
 ### Placeholders still to replace
 
 - The bio in `src/content/about.ts`.
 - The TrainerRoad onboarding project: `role`, `stack`, `description` and its screen recording (`media`). Remove `draft: true` when done.
-- Screenshots or recordings for the other projects.
 
 ## How the unlock works
 

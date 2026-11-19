@@ -86,6 +86,17 @@ test("draw P, T and L, then open a project, and the unlock survives a reload", a
   await expect(page.getByRole("heading", { name: "Seattle 311" })).toBeVisible();
   await expect(page).toHaveURL(/\/projects\/seattle-311\/$/);
 
+  // The project's screenshot is served and decodes, and the deployed site is linked.
+  const screenshot = page.getByRole("img", { name: /^The Seattle 311 map/ });
+  await expect(screenshot).toBeVisible();
+  await expect
+    .poll(() => screenshot.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0))
+    .toBe(true);
+  await expect(page.getByRole("link", { name: /^live site/ })).toHaveAttribute(
+    "href",
+    "https://etcetera8.github.io/seattle-311/",
+  );
+
   // A real unlock was remembered: no boot, no gate.
   await page.reload();
   await expect(page.getByRole("heading", { name: "Seattle 311" })).toBeVisible();
@@ -273,9 +284,16 @@ test("the page does not scroll sideways", async ({ page }) => {
   await expect(page.getByText(`command not found: ${long}`)).toBeVisible();
   expect(await overflow()).toBeLessThanOrEqual(0);
 
-  await prompt.fill("open 1");
+  // The longest project name, and its placeholder media slot.
+  await prompt.fill("open trainerroad-onboarding");
   await prompt.press("Enter");
   await expect(page.getByRole("heading", { name: "TrainerRoad onboarding" })).toBeVisible();
+  expect(await overflow()).toBeLessThanOrEqual(0);
+
+  // A project with a real screenshot and two links.
+  await prompt.fill("open 1");
+  await prompt.press("Enter");
+  await expect(page.getByRole("heading", { name: "Seattle 311" })).toBeVisible();
   expect(await overflow()).toBeLessThanOrEqual(0);
 });
 

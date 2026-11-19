@@ -141,10 +141,12 @@ Content lives in typed data files. Adding a project or article is one entry.
 | Slug | Title | Stack | Links | Media |
 |---|---|---|---|---|
 | `trainerroad-onboarding` | TrainerRoad onboarding | placeholder | none yet | placeholder slot for a 10 to 20 second muted MP4/WebM loop |
-| `seattle-311` | Seattle 311 | TypeScript | `https://github.com/etcetera8/seattle-311` | placeholder slot for a screenshot |
-| `copy-pasta` | Copy Pasta | TypeScript | `https://github.com/etcetera8/copy-pasta` | placeholder slot for a screenshot |
+| `seattle-311` | Seattle 311 | TypeScript | live site `https://etcetera8.github.io/seattle-311/`, then `https://github.com/etcetera8/seattle-311` | screenshot of the live site |
+| `copy-pasta` | Copy Pasta | TypeScript | live site `https://copypastaformac.com/`, then `https://github.com/etcetera8/copy-pasta` | screenshot of the live site |
 
 Descriptions for the two repos start from their GitHub descriptions ("A map displaying Seattle area 311 data"; "A clipboard utility app. Save copy history for up to seven days, search copy history."). Role, stack and description for TrainerRoad are placeholder text until Parker supplies them.
+
+When a project has a deployed site, its `live site` link comes first, before the source link.
 
 A media slot is a fixed 16:9 box with a dashed border and a label. Real media replaces it without changing layout. A project's `media` field is optional and takes `{ kind: "video" | "image", src, alt }`.
 
@@ -255,7 +257,7 @@ Not covered by automation, and to be checked by hand: drawing with a finger on r
 
 ## Out of scope
 
-- Real media, final bio text and TrainerRoad project copy (placeholders now, supplied later).
+- The TrainerRoad recording, final bio text and TrainerRoad project copy (placeholders now, supplied later).
 - Choosing a host or domain and deploying. The build output works on any static host.
 - CMS, automatic Medium sync, analytics, contact form.
 - Extra hidden commands or bonus content.

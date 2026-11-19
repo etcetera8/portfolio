@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { about } from "@/content/about";
 import { articles, moreArticlesHref } from "@/content/articles";
@@ -7,6 +9,34 @@ import { projects } from "@/content/projects";
 describe("content", () => {
   it("has at least one project", () => {
     expect(projects.length).toBeGreaterThan(0);
+  });
+
+  it("points every project's media at a described file that exists under public/", () => {
+    const withMedia = projects.filter((project) => project.media);
+    expect(withMedia.length).toBeGreaterThan(0);
+    for (const project of withMedia) {
+      const media = project.media!;
+      expect(media.src).toMatch(/^\/media\/[a-z0-9-]+\.(png|jpe?g|webp|mp4|webm)$/);
+      expect(existsSync(join(process.cwd(), "public", media.src))).toBe(true);
+      expect(media.alt.trim()).not.toBe("");
+    }
+  });
+
+  it("lists a project's live site before its other links", () => {
+    for (const project of projects) {
+      const index = project.links.findIndex((link) => link.label === "live site");
+      if (index !== -1) expect(index).toBe(0);
+    }
+    const live = (slug: string) =>
+      projects.find((project) => project.slug === slug)?.links.find((link) => link.label === "live site")?.href;
+    expect(live("seattle-311")).toBe("https://etcetera8.github.io/seattle-311/");
+    expect(live("copy-pasta")).toBe("https://copypastaformac.com/");
+  });
+
+  it("lists finished projects before drafts", () => {
+    const firstDraft = projects.findIndex((project) => project.draft);
+    if (firstDraft === -1) return;
+    expect(projects.slice(firstDraft).every((project) => project.draft)).toBe(true);
   });
 
   it("uses unique lowercase kebab-case slugs", () => {

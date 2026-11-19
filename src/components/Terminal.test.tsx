@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Terminal } from "@/components/Terminal";
 
@@ -66,11 +66,21 @@ describe("Terminal", () => {
 
   it("opens a project by number and puts its URL in the address bar", () => {
     renderTerminal();
-    run("open 2");
+    run("open 1");
     expect(screen.getByRole("heading", { level: 2, name: "Seattle 311" })).toBeInTheDocument();
     expect(screen.getByText("A map displaying Seattle area 311 data.")).toBeInTheDocument();
-    expect(screen.getByText("[ media: Seattle 311 ]")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /^The Seattle 311 map/ })).toHaveAttribute(
+      "src",
+      "/media/seattle-311.jpg",
+    );
     expect(window.location.pathname).toBe("/projects/seattle-311/");
+  });
+
+  it("shows a placeholder slot for a project that has no media yet", () => {
+    renderTerminal();
+    run("open trainerroad-onboarding");
+    expect(screen.getByText("[ media: TrainerRoad onboarding ]")).toBeInTheDocument();
+    expect(screen.queryByRole("img")).toBeNull();
   });
 
   it("opens a project from its chip", () => {
@@ -86,6 +96,24 @@ describe("Terminal", () => {
     run("open seattle-311");
     run("about");
     expect(window.location.pathname).toBe("/");
+  });
+
+  it("links to the deployed site first, then the source", () => {
+    renderTerminal();
+    run("open seattle-311");
+    const links = within(screen.getByRole("article")).getAllByRole("link");
+    expect(links.map((link) => link.getAttribute("href"))).toEqual([
+      "https://etcetera8.github.io/seattle-311/",
+      "https://github.com/etcetera8/seattle-311",
+    ]);
+    expect(links[0]).toHaveAccessibleName(/^live site/);
+
+    run("open copy-pasta");
+    const latest = screen.getAllByRole("article").at(-1)!;
+    expect(within(latest).getAllByRole("link")[0]).toHaveAttribute(
+      "href",
+      "https://copypastaformac.com/",
+    );
   });
 
   it("opens project links in a new tab safely", () => {
