@@ -1,74 +1,112 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { FormEvent, KeyboardEvent } from "react";
+import type { FormEvent, KeyboardEvent, RefObject } from "react";
 import { complete } from "@/lib/commands";
 
-export const PROMPT_LABEL = "parker@ptl:~$";
+/** True on devices with a mouse or trackpad. Touch devices must not auto-open the keyboard. */
+export function hasFinePointer(): boolean {
+  return window.matchMedia?.("(pointer: fine)").matches === true;
+}
+
+/** The `parker@ptl:~$` label. The host part is hidden on narrow screens. Shared by prompt and transcript. */
+export function PromptLabel({ hidden = false }: { hidden?: boolean }) {
+  return (
+    <span className="prompt-label" aria-hidden={hidden ? "true" : undefined}>
+      <span className="prompt-host">parker@ptl:~</span>$
+    </span>
+  );
+}
 
 type Props = {
   onSubmit: (input: string) => void;
   /** Commands run so far, oldest first. */
   history: readonly string[];
   slugs: readonly string[];
+  /** Owned by the parent so it can return focus here after a chip click. */
+  inputRef: RefObject<HTMLInputElement | null>;
 };
 
-export function Prompt({ onSubmit, history, slugs }: Props) {
+export function Prompt({ onSubmit, history, slugs, inputRef }: Props) {
   const [value, setValue] = useState("");
+  // Where the real caret is, so the drawn block cursor can follow it.
+  const [caret, setCaret] = useState(0);
   // Position in history while browsing with the arrow keys; null when not browsing.
   const [historyIndex, setHistoryIndex] = useState<number | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  // What was typed before browsing history, restored when arrowing back past the newest entry.
+  const draft = useRef("");
 
-  // Focus on arrival only where there is a mouse or trackpad. On touch devices
-  // focusing would open the on-screen keyboard over the page.
   useEffect(() => {
-    if (window.matchMedia?.("(pointer: fine)").matches) {
+    if (hasFinePointer()) {
       inputRef.current?.focus({ preventScroll: true });
     }
-  }, []);
+  }, [inputRef]);
+
+  function replaceValue(next: string) {
+    setValue(next);
+    setCaret(next.length);
+  }
+
+  function syncCaret(input: HTMLInputElement) {
+    setCaret(input.selectionStart ?? input.value.length);
+  }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     onSubmit(value);
-    setValue("");
+    replaceValue("");
     setHistoryIndex(null);
+    // Close the on-screen keyboard so the output is visible.
+    if (!hasFinePointer()) inputRef.current?.blur();
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.shiftKey || event.altKey || event.ctrlKey || event.metaKey) return;
+    if (event.nativeEvent.isComposing) return;
+
     if (event.key === "ArrowUp") {
       if (history.length === 0) return;
       event.preventDefault();
+      if (historyIndex === null) draft.current = value;
       const next = historyIndex === null ? history.length - 1 : Math.max(0, historyIndex - 1);
       setHistoryIndex(next);
-      setValue(history[next]);
+      replaceValue(history[next]);
     } else if (event.key === "ArrowDown") {
       if (historyIndex === null) return;
       event.preventDefault();
       const next = historyIndex + 1;
       if (next >= history.length) {
         setHistoryIndex(null);
-        setValue("");
+        replaceValue(draft.current);
       } else {
         setHistoryIndex(next);
-        setValue(history[next]);
+        replaceValue(history[next]);
       }
     } else if (event.key === "Tab") {
-      // Only swallow Tab when it completes something, so keyboard users can still tab away.
+      // An empty prompt lets Tab move focus on. Otherwise keep focus here, completing if possible.
+      if (value.trim() === "") return;
+      event.preventDefault();
       const completed = complete(value, slugs);
-      if (completed !== null) {
-        event.preventDefault();
-        setValue(completed);
-      }
+      if (completed !== null) replaceValue(completed);
     }
   }
 
+  const at = value.charAt(caret);
+
   return (
     <form className="prompt" onSubmit={handleSubmit}>
-      <span className="prompt-label">{PROMPT_LABEL}</span>
+      <PromptLabel />
       <span className="prompt-field">
         {/* The visible text and block cursor. The real input sits on top, transparent. */}
-        <span aria-hidden="true">{value}</span>
-        <span className="cursor" aria-hidden="true" />
+        <span aria-hidden="true" className="prompt-before">
+          {value.slice(0, caret)}
+        </span>
+        <span className="cursor" aria-hidden="true">
+          {at}
+        </span>
+        <span aria-hidden="true" className="prompt-after">
+          {value.slice(caret + 1)}
+        </span>
         <input
           ref={inputRef}
           className="prompt-input"
@@ -76,14 +114,20 @@ export function Prompt({ onSubmit, history, slugs }: Props) {
           value={value}
           onChange={(event) => {
             setValue(event.target.value);
+            syncCaret(event.target);
             setHistoryIndex(null);
           }}
           onKeyDown={handleKeyDown}
+          onKeyUp={(event) => syncCaret(event.currentTarget)}
+          onSelect={(event) => syncCaret(event.currentTarget)}
+          onClick={(event) => syncCaret(event.currentTarget)}
           autoCapitalize="none"
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}
           enterKeyHint="go"
+          data-1p-ignore
+          data-lpignore="true"
         />
       </span>
     </form>

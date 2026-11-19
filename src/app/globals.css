@@ -478,6 +478,9 @@ a {
   align-items: baseline;
   margin: 18px 0 0;
   color: var(--accent);
+  /* One size for the visible text and the transparent input, so they coincide.
+     16px also stops iOS zooming the page when the input is focused. */
+  font-size: 16px;
 }
 
 .prompt-label {
@@ -506,31 +509,45 @@ a {
   color: transparent;
   caret-color: transparent;
   font: inherit;
-  /* 16px stops iOS zooming the page when the input is focused. */
-  font-size: 16px;
 }
 
-/* Hollow when the prompt is not focused, solid and blinking when it is. */
+/* Selected text is already drawn by the visible layer; do not paint it twice. */
+.prompt-input::selection {
+  color: transparent;
+  background: rgba(0, 255, 102, 0.25);
+}
+
+/* The block sits over the character at the caret (or is empty at the end of the line).
+   Hollow when the prompt is not focused, solid and blinking when it is. */
 .cursor {
   display: inline-block;
   width: 1ch;
-  height: 1.1em;
-  border: 1px solid var(--accent);
+  height: 1.2em;
+  line-height: 1.2em;
   vertical-align: text-bottom;
+  box-shadow: inset 0 0 0 1px var(--accent);
+  text-shadow: none;
 }
 
 .prompt-field:focus-within .cursor {
   background: var(--accent);
+  color: var(--bg);
   animation: blink 1s steps(1) infinite;
 }
 
 @keyframes blink {
   50% {
-    opacity: 0;
+    background: transparent;
+    color: var(--accent);
   }
 }
 
 @media (max-width: 560px) {
+  /* At 320px the field would fit about 15 characters beside the full label. */
+  .prompt-host {
+    display: none;
+  }
+
   .row {
     grid-template-columns: 1fr;
     margin: 8px 0;

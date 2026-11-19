@@ -1,10 +1,28 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Terminal } from "@/components/Terminal";
 
 beforeEach(() => {
   window.history.replaceState(null, "", "/");
 });
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
+
+/** jsdom has no matchMedia; this makes `(pointer: fine)` match or not. */
+function stubPointer(fine: boolean) {
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn((query: string) => ({
+      matches: query.includes("pointer: fine") ? fine : false,
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    })),
+  );
+}
 
 function input() {
   return screen.getByLabelText("Command") as HTMLInputElement;
@@ -195,5 +213,274 @@ describe("Terminal", () => {
       "aria-live",
       "polite",
     );
+  });
+});
+
+function caretTo(index: number) {
+  const el = input();
+  el.setSelectionRange(index, index);
+  fireEvent.select(el);
+}
+
+describe("Terminal focus", () => {
+  it("focuses the prompt on arrival with a fine pointer", () => {
+    stubPointer(true);
+    renderTerminal();
+    expect(input()).toHaveFocus();
+  });
+
+  it("does not focus the prompt on arrival with a coarse pointer", () => {
+    stubPointer(false);
+    renderTerminal();
+    expect(input()).not.toHaveFocus();
+  });
+
+  it("returns focus to the prompt after a chip click with a fine pointer", () => {
+    stubPointer(true);
+    renderTerminal();
+    fireEvent.click(screen.getByRole("button", { name: "projects" }));
+    expect(input()).toHaveFocus();
+  });
+
+  it("leaves focus alone after a chip click with a coarse pointer", () => {
+    stubPointer(false);
+    renderTerminal();
+    const chip = screen.getByRole("button", { name: "projects" });
+    chip.focus();
+    fireEvent.click(chip);
+    expect(input()).not.toHaveFocus();
+  });
+
+  it("focuses the prompt when blank space is clicked with a fine pointer", () => {
+    stubPointer(true);
+    renderTerminal();
+    (document.activeElement as HTMLElement).blur();
+    fireEvent.click(screen.getByRole("heading", { level: 1 }));
+    expect(input()).toHaveFocus();
+  });
+
+  it("does not focus the prompt on a blank click with a coarse pointer", () => {
+    stubPointer(false);
+    renderTerminal();
+    fireEvent.click(screen.getByRole("heading", { level: 1 }));
+    expect(input()).not.toHaveFocus();
+  });
+
+  it("does not steal focus from a link or while text is selected", () => {
+    stubPointer(true);
+    renderTerminal();
+    run("links");
+    (document.activeElement as HTMLElement).blur();
+    fireEvent.click(screen.getByRole("link", { name: /^github\.com\/etcetera8/ }));
+    expect(input()).not.toHaveFocus();
+
+    const selection = vi.spyOn(window, "getSelection").mockReturnValue({
+      isCollapsed: false,
+    } as Selection);
+    fireEvent.click(screen.getByRole("heading", { level: 1 }));
+    expect(input()).not.toHaveFocus();
+    selection.mockRestore();
+  });
+
+  it("blurs the prompt after a submit with a coarse pointer", () => {
+    stubPointer(false);
+    renderTerminal();
+    input().focus();
+    run("about");
+    expect(input()).not.toHaveFocus();
+  });
+
+  it("keeps the prompt focused after a submit with a fine pointer", () => {
+    stubPointer(true);
+    renderTerminal();
+    run("about");
+    expect(input()).toHaveFocus();
+  });
+
+  it("turns off password-manager prompts on the input", () => {
+    renderTerminal();
+    expect(input()).toHaveAttribute("data-1p-ignore");
+    expect(input()).toHaveAttribute("data-lpignore", "true");
+  });
+});
+
+describe("Terminal caret", () => {
+  function cursor() {
+    return document.querySelector(".cursor") as HTMLElement;
+  }
+  function before() {
+    return document.querySelector(".prompt-before") as HTMLElement;
+  }
+
+  it("draws an empty cursor at the end of the line", () => {
+    renderTerminal();
+    type("abot");
+    expect(before()).toHaveTextContent("abot");
+    expect(cursor()).toBeEmptyDOMElement();
+  });
+
+  it("draws the cursor over the character at the caret", () => {
+    renderTerminal();
+    type("abot");
+    caretTo(2);
+    expect(before().textContent).toBe("ab");
+    expect(cursor().textContent).toBe("o");
+    expect(document.querySelector(".prompt-after")?.textContent).toBe("t");
+  });
+
+  it("puts the caret at the end after history recall and tab completion", () => {
+    renderTerminal();
+    run("about");
+    fireEvent.keyDown(input(), { key: "ArrowUp" });
+    expect(before().textContent).toBe("about");
+    expect(cursor()).toBeEmptyDOMElement();
+    type("pro");
+    caretTo(1);
+    fireEvent.keyDown(input(), { key: "Tab" });
+    expect(before().textContent).toBe("projects");
+    expect(cursor()).toBeEmptyDOMElement();
+  });
+
+  it("shows only the $ of the label so the field has room on narrow screens", () => {
+    renderTerminal();
+    const host = document.querySelector(".prompt .prompt-host");
+    expect(host).toHaveTextContent("parker@ptl:~");
+    expect(host?.parentElement).toHaveTextContent("parker@ptl:~$");
+  });
+});
+
+describe("Terminal Tab key", () => {
+  function tab(shiftKey = false) {
+    return fireEvent.keyDown(input(), { key: "Tab", shiftKey });
+  }
+
+  it("is swallowed when it completes", () => {
+    renderTerminal();
+    type("pro");
+    expect(tab()).toBe(false);
+    expect(input().value).toBe("projects");
+  });
+
+  it("is swallowed when the input is ambiguous, leaving the value alone", () => {
+    renderTerminal();
+    type("l");
+    expect(tab()).toBe(false);
+    expect(input().value).toBe("l");
+  });
+
+  it("is swallowed when the input is already complete", () => {
+    renderTerminal();
+    type("projects");
+    expect(tab()).toBe(false);
+    expect(input().value).toBe("projects");
+  });
+
+  it("moves focus on normally when the prompt is empty", () => {
+    renderTerminal();
+    expect(tab()).toBe(true);
+  });
+
+  it("leaves Shift+Tab alone", () => {
+    renderTerminal();
+    type("pro");
+    expect(tab(true)).toBe(true);
+    expect(input().value).toBe("pro");
+  });
+
+  it("ignores Tab during IME composition", () => {
+    renderTerminal();
+    type("pro");
+    expect(fireEvent.keyDown(input(), { key: "Tab", isComposing: true })).toBe(true);
+    expect(input().value).toBe("pro");
+  });
+});
+
+describe("Terminal browser behaviour", () => {
+  it("scrolls to new output but not on arrival", () => {
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    renderTerminal();
+    expect(scroll).not.toHaveBeenCalled();
+    run("about");
+    expect(scroll).toHaveBeenCalledTimes(1);
+    run("links");
+    expect(scroll).toHaveBeenCalledTimes(2);
+    delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+  });
+
+  it("starts with the address bar matching the initial command", () => {
+    window.history.replaceState(null, "", "/somewhere-else/");
+    renderTerminal("open copy-pasta");
+    expect(window.location.pathname).toBe("/projects/copy-pasta/");
+  });
+
+  it("resets the address bar to / on clear", () => {
+    renderTerminal();
+    run("open seattle-311");
+    run("clear");
+    expect(window.location.pathname).toBe("/");
+  });
+
+  it("replaces the history entry instead of pushing one", () => {
+    renderTerminal();
+    const before = window.history.length;
+    run("open 2");
+    expect(window.history.length).toBe(before);
+  });
+
+  it("adds no transcript entry for logout", () => {
+    const { container } = renderTerminal("help", vi.fn());
+    run("logout");
+    expect(container.querySelectorAll(".entry")).toHaveLength(1);
+  });
+
+  it("recalls the most recent command again after typing", () => {
+    renderTerminal();
+    run("about");
+    run("links");
+    fireEvent.keyDown(input(), { key: "ArrowUp" });
+    fireEvent.keyDown(input(), { key: "ArrowUp" });
+    expect(input().value).toBe("about");
+    type("x");
+    fireEvent.keyDown(input(), { key: "ArrowUp" });
+    expect(input().value).toBe("links");
+  });
+
+  it("recalls the most recent command again after a submit", () => {
+    renderTerminal();
+    run("about");
+    run("links");
+    fireEvent.keyDown(input(), { key: "ArrowUp" });
+    fireEvent.keyDown(input(), { key: "ArrowUp" });
+    run("help");
+    fireEvent.keyDown(input(), { key: "ArrowUp" });
+    expect(input().value).toBe("help");
+  });
+
+  it("restores a half-typed line when arrowing back down", () => {
+    renderTerminal();
+    run("about");
+    type("pro");
+    fireEvent.keyDown(input(), { key: "ArrowUp" });
+    expect(input().value).toBe("about");
+    fireEvent.keyDown(input(), { key: "ArrowDown" });
+    expect(input().value).toBe("pro");
+  });
+
+  it("marks the transcript as a polite log with hidden prompt labels", () => {
+    const { container } = renderTerminal();
+    const log = screen.getByRole("log");
+    expect(log).toHaveAttribute("aria-live", "polite");
+    expect(log.querySelector(".prompt-label")?.closest("[aria-hidden='true']")).not.toBeNull();
+    expect(container.querySelector(".prompt .prompt-label")?.closest("[aria-hidden='true']")).toBeNull();
+  });
+
+  it("announces a cleared screen until the next command", () => {
+    renderTerminal();
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
+    run("clear");
+    expect(screen.getByRole("status")).toHaveTextContent("screen cleared");
+    run("about");
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
   });
 });
