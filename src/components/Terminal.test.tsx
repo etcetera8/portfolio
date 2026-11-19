@@ -87,7 +87,7 @@ describe("Terminal", () => {
   it("opens project links in a new tab safely", () => {
     renderTerminal();
     run("open seattle-311");
-    const link = screen.getByRole("link", { name: "source on github" });
+    const link = screen.getByRole("link", { name: /^source on github/ });
     expect(link).toHaveAttribute("href", "https://github.com/etcetera8/seattle-311");
     expect(link).toHaveAttribute("target", "_blank");
     expect(link).toHaveAttribute("rel", "noopener noreferrer");
@@ -116,13 +116,13 @@ describe("Terminal", () => {
     run("writing");
     expect(
       screen.getByRole("link", {
-        name: "Adding React Electron Event Handlers from React Code to the App",
+        name: /^Adding React Electron Event Handlers from React Code to the App/,
       }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Raspberry Pi closeCall Cycling License Plate Recorder" }),
+      screen.getByRole("link", { name: /^Raspberry Pi closeCall Cycling License Plate Recorder/ }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "more on medium" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /^more on medium/ })).toHaveAttribute(
       "href",
       "https://medium.com/@parkerthomas_2392",
     );
@@ -131,12 +131,12 @@ describe("Terminal", () => {
   it("lists the personal links", () => {
     renderTerminal();
     run("links");
-    expect(screen.getByRole("link", { name: "github.com/etcetera8" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /^github\.com\/etcetera8/ })).toHaveAttribute(
       "href",
       "https://github.com/etcetera8",
     );
-    expect(screen.getByRole("link", { name: "linkedin.com/in/parker-lindley" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "medium.com/@parkerthomas_2392" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /^linkedin\.com\/in\/parker-lindley/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /^medium\.com\/@parkerthomas_2392/ })).toBeInTheDocument();
   });
 
   it("reports an unknown command", () => {
@@ -221,6 +221,25 @@ function caretTo(index: number) {
   el.setSelectionRange(index, index);
   fireEvent.select(el);
 }
+
+describe("Terminal outputs", () => {
+  it("names external links as opening in a new tab", () => {
+    renderTerminal();
+    run("open seattle-311");
+    expect(screen.getByRole("link", { name: /^source on github/ })).toHaveAccessibleName(
+      "source on github (opens in new tab)",
+    );
+  });
+
+  it("opens a project when its name is clicked, with one accessible open control", () => {
+    renderTerminal();
+    run("projects");
+    expect(screen.getAllByRole("button", { name: "open seattle-311" })).toHaveLength(1);
+    fireEvent.click(screen.getByText("seattle-311"));
+    expect(screen.getByRole("heading", { level: 2, name: "Seattle 311" })).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/projects/seattle-311/");
+  });
+});
 
 describe("Terminal focus", () => {
   it("focuses the prompt on arrival with a fine pointer", () => {

@@ -2,7 +2,13 @@ import { ExtLink } from "@/components/outputs/ExtLink";
 import { MediaSlot } from "@/components/outputs/MediaSlot";
 import type { Project } from "@/content/types";
 
-export function ProjectOutput({ project }: { project: Project }) {
+type Props = {
+  project: Project;
+  /** False for the hidden server-rendered copy, so its media is never downloaded. */
+  withMedia?: boolean;
+};
+
+export function ProjectOutput({ project, withMedia = true }: Props) {
   return (
     <article className="project">
       <h2 className="project-title">{project.title}</h2>
@@ -17,7 +23,7 @@ export function ProjectOutput({ project }: { project: Project }) {
         </div>
       </dl>
       <p>{project.description}</p>
-      <MediaSlot project={project} />
+      {withMedia && <MediaSlot project={project} />}
       {project.links.length > 0 && (
         <p className="project-links">
           {project.links.map((link) => (

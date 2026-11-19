@@ -365,8 +365,16 @@ a {
   margin: 5px 0;
 }
 
+/* A button only to give the name a tap target; styled as plain text. */
 .proj-name {
+  padding: 0;
+  border: 0;
+  background: none;
   color: var(--accent);
+  font: inherit;
+  text-align: left;
+  text-shadow: inherit;
+  cursor: pointer;
 }
 
 .article {
@@ -387,6 +395,7 @@ a {
 .chip {
   padding: 0 1ch;
   border: 1px solid var(--dim);
+  border-radius: 0;
   background: transparent;
   color: var(--accent);
   font: inherit;
@@ -394,11 +403,31 @@ a {
   cursor: pointer;
 }
 
-.chip:hover,
-.chip:focus-visible {
+@media (hover: hover) {
+  .chip:hover {
+    background: var(--accent);
+    color: var(--bg);
+    text-shadow: none;
+  }
+}
+
+.chip:focus-visible,
+.chip:active {
   background: var(--accent);
   color: var(--bg);
   text-shadow: none;
+}
+
+/* Fingers need a bigger target, and neighbouring chips must not touch. */
+@media (pointer: coarse) {
+  .chip {
+    padding: 8px 1.5ch;
+  }
+
+  .row,
+  .proj {
+    margin: 8px 0;
+  }
 }
 
 .ext {
@@ -468,7 +497,8 @@ a {
 
 .media {
   border: 1px solid var(--dim);
-  object-fit: cover;
+  background: #000;
+  object-fit: contain;
 }
 
 /* ---------- prompt ---------- */
