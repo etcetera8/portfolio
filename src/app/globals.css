@@ -96,7 +96,7 @@ a {
 .pad {
   display: block;
   width: 100%;
-  max-width: 300px;
+  max-width: clamp(180px, calc((100dvh - 290px) * 0.75), 300px);
   margin: 0 auto;
   touch-action: none;
   user-select: none;
@@ -126,7 +126,7 @@ a {
   stroke-linejoin: round;
 }
 
-.pad-ghost {
+.pad-ghost line {
   fill: none;
   stroke: var(--dim);
   stroke-width: 3;
