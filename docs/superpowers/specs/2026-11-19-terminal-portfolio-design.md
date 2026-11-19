@@ -69,7 +69,7 @@ T cannot be drawn in one stroke without retracing, which is why retracing is all
 - Correct: `OK n/3`, then the next stage. After the third: `ACCESS GRANTED`, then the wipe.
 - Wrong: the trace turns red, the pad shakes, `ACCESS DENIED`, and the pad clears after about 450ms. The stage does not reset to 1.
 - Feedback is brief (300ms after a correct stroke) so that a visitor who starts the next letter straight away is not ignored.
-- The hint and the status line sit above the pad, so they stay visible on small phones, and both are in one live region.
+- The hint and the status line sit above the pad, so they stay visible on small phones. Screen readers get a single hidden live line: the hint when idle, the status otherwise.
 - After two misses on a stage, a dashed ghost trace of the target shape is drawn on the pad and stays until that stage is passed.
 - Only the pointer that started a stroke can extend or finish it. A second finger, a right-click or a lost pointer-up never submits a partial pattern.
 
@@ -79,7 +79,7 @@ The whole gate (text, pad and the typed-equivalent line) fits without scrolling 
 
 ### Typed equivalent
 
-Under the pad is a visible line, `or type the initials`, with a one-character input. Typing the letter for the current stage (`p`, then `t`, then `l`, case-insensitive) passes that stage. A wrong letter does nothing and is not a miss. Pressing those keys anywhere on the page, without focusing the input, also works.
+Under the pad is a visible line, `or type the initials`, with a one-character input. Typing the letter for the current stage (`p`, then `t`, then `l`, case-insensitive) passes that stage. A wrong letter does nothing and is not a miss. Letters typed while feedback is showing are queued, so typing all three at normal speed works. Pressing those keys anywhere on the page, without focusing the input, also works.
 
 A drag cannot be performed without a pointer, so this keeps all three stages required without excluding keyboard-only and screen-reader users. It is a real, focusable control rather than hidden instructions because desktop screen readers intercept single letter keys unless an input has focus, and phone screen-reader users have no keyboard until an input summons one. The visible label does not name the letters, so the puzzle is the same for everyone.
 

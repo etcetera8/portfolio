@@ -43,7 +43,15 @@
 - The ghost trace is a `<g data-testid="pad-ghost">` of one `<line>` per unique segment, and is hidden while the pad shows a denied stroke.
 - `PASS_DELAY` is 300 and `DENY_DELAY` is 450.
 - The gate has a visible `or type the initials` input under the pad (accessible name "Type the initials, one letter at a time"). The hidden screen-reader sentence is gone. Pressing p, t, l anywhere on the page still works.
-- The hint and status lines sit above the pad inside one `role="status"` region, so that element's text contains both.
+- The hint and status lines sit above the pad. The visible status paragraph has `data-testid="gate-status"`. Screen readers get a separate visually hidden `role="status"` line that reads the hint when idle and the status otherwise.
+- Letters typed while feedback is showing are queued (up to three) and replayed, so typing "ptl" at normal speed unlocks in one go.
+
+**Amendments after the Task 8 review (already applied to the code; the Task 8 text below shows the original versions):**
+
+- `ExtLink` shows a `↗` and adds visually hidden "(opens in new tab)", so a link's accessible name is its text followed by "(opens in new tab)". Tests match link names with a regex.
+- `ProjectOutput` takes `withMedia` (default true). `StaticContent` passes `withMedia={false}` so hidden media never downloads.
+- The prompt tracks the caret position, focuses itself after a chip click on fine pointers, and handles Tab without throwing focus out of the page.
+- The transcript is `role="log"`.
 - The pad's width is capped by viewport height, and short landscape screens get a two-column gate.
 
 ---
@@ -3348,9 +3356,14 @@ describe("StaticContent", () => {
     expect(screen.getByRole("heading", { name: "Seattle 311" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Copy Pasta" })).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Raspberry Pi closeCall Cycling License Plate Recorder" }),
+      screen.getByRole("link", { name: /^Raspberry Pi closeCall Cycling License Plate Recorder/ }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "github.com/etcetera8" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /^github\.com\/etcetera8/ })).toBeInTheDocument();
+  });
+
+  it("does not render media, so hidden content never downloads it", () => {
+    const { container } = render(<StaticContent />);
+    expect(container.querySelector(".media-slot, .media")).toBeNull();
   });
 
   it("shows only the named project when given a slug", () => {
@@ -3396,7 +3409,7 @@ export function StaticContent({ slug }: { slug?: string }) {
 
       <h2 className="static-heading">projects</h2>
       {shown.map((project) => (
-        <ProjectOutput key={project.slug} project={project} />
+        <ProjectOutput key={project.slug} project={project} withMedia={false} />
       ))}
 
       <h2 className="static-heading">writing</h2>
@@ -3412,7 +3425,7 @@ export function StaticContent({ slug }: { slug?: string }) {
 - [ ] **Step 4: Run the test to verify it passes**
 
 Run: `npx vitest run src/components/StaticContent.test.tsx`
-Expected: 3 passed.
+Expected: 4 passed.
 
 - [ ] **Step 5: Replace `src/app/page.tsx`**
 
@@ -3667,8 +3680,8 @@ test("a wrong pattern is denied and the stage stays put", async ({ page }) => {
   await expect(page.getByTestId("pattern-pad")).toBeVisible();
 
   await draw(page, L);
-  await expect(page.getByRole("status")).toContainText("ACCESS DENIED");
-  await expect(page.getByRole("status")).toContainText("AWAITING INPUT");
+  await expect(page.getByTestId("gate-status")).toHaveText("ACCESS DENIED");
+  await expect(page.getByTestId("gate-status")).toHaveText("AWAITING INPUT");
   await expect(page.getByText("AUTH 1/3")).toBeVisible();
 });
 
@@ -3693,11 +3706,8 @@ test("the initials can be typed into the field under the pad", async ({ page }) 
   const field = page.getByLabel("Type the initials, one letter at a time");
   await expect(field).toBeVisible();
 
-  await field.pressSequentially("p");
-  await expect(page.getByText("AUTH 2/3")).toBeVisible();
-  await field.pressSequentially("t");
-  await expect(page.getByText("AUTH 3/3")).toBeVisible();
-  await field.pressSequentially("l");
+  // Typed at a normal pace, without waiting for each stage to settle.
+  await field.pressSequentially("ptl", { delay: 100 });
 
   await expect(page.getByText(HELP_HEADING)).toBeVisible();
 });
@@ -3709,7 +3719,7 @@ test("the gate fits a small phone without scrolling", async ({ page }) => {
   await expect(pad).toBeVisible();
 
   for (const locator of [
-    page.getByRole("status"),
+    page.getByTestId("gate-status"),
     pad,
     page.getByLabel("Type the initials, one letter at a time"),
   ]) {
