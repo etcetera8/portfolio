@@ -128,12 +128,10 @@ a {
 }
 
 .pad-ghost line {
-  fill: none;
   stroke: var(--dim);
   stroke-width: 3;
   stroke-dasharray: 5 7;
   stroke-linecap: round;
-  stroke-linejoin: round;
   animation: march 1.2s linear infinite;
 }
 
@@ -246,11 +244,6 @@ a {
   font-size: 16px; /* 16px stops iOS zooming on focus */
   text-align: center;
   caret-color: var(--accent);
-}
-
-.gate-input:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
 }
 
 /* Short portrait phones: recover vertical space for the pad. */
@@ -577,6 +570,7 @@ a {
     display: none;
   }
 
+  /* Narrow screens: link rows stack, and the project list drops its description to a second line. */
   .row {
     grid-template-columns: 1fr;
     margin: 8px 0;
