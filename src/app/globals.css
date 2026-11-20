@@ -69,6 +69,13 @@ a {
 }
 
 .meta {
+  margin: 0 0 4px;
+  color: var(--dim);
+  text-shadow: none;
+}
+
+/* How to reach me, always in view under the name. */
+.contact-line {
   margin: 0 0 20px;
   color: var(--dim);
   text-shadow: none;
@@ -97,9 +104,9 @@ a {
   display: block;
   width: 100%;
   max-width: 300px;
-  /* The pad is square, so its width is also its height. 350px is everything else on the
-     lock screen: title, prompt, guide, progress bar, typed field, padding. */
-  max-width: clamp(180px, calc(100dvh - 350px), 300px);
+  /* The pad is square, so its width is also its height. 380px is everything else on the
+     lock screen: title, prompt, guide, progress bar, typed field, skip link, padding. */
+  max-width: clamp(180px, calc(100dvh - 380px), 300px);
   margin: 0 auto;
   touch-action: none;
   user-select: none;
@@ -292,6 +299,28 @@ a {
   pointer-events: auto;
 }
 
+/* A quiet way past the lock for visitors in a hurry. */
+.gate-skip {
+  display: block;
+  margin: 2px auto 0;
+  padding: 4px 10px;
+  border: 0;
+  background: none;
+  color: var(--dim);
+  font: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-shadow: none;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .gate-skip:hover {
+    color: var(--accent);
+  }
+}
+
 /* Short portrait phones: recover vertical space for the pad. */
 @media (max-height: 700px) {
   .gate {
@@ -322,9 +351,9 @@ a {
     margin-top: 4px;
   }
 
-  /* With the tighter spacing above, the rest of the lock screen takes 259px. */
+  /* With the tighter spacing above, the rest of the lock screen takes 290px. */
   .pad {
-    max-width: clamp(180px, calc(100dvh - 259px), 300px);
+    max-width: clamp(180px, calc(100dvh - 290px), 300px);
   }
 }
 
@@ -347,8 +376,9 @@ a {
   .pad {
     width: auto;
     max-width: none;
-    height: calc(100vh - 64px);
-    height: calc(100dvh - 64px);
+    /* 89px: the gate's padding, the typed field and the skip link. */
+    height: calc(100vh - 89px);
+    height: calc(100dvh - 89px);
     aspect-ratio: 1;
   }
 }
@@ -547,6 +577,97 @@ a {
   object-fit: contain;
 }
 
+/* ---------- resume ---------- */
+.resume {
+  margin: 0 0 6px 2ch;
+}
+
+.resume p {
+  margin: 0 0 8px;
+}
+
+.resume-title {
+  color: var(--accent);
+}
+
+.resume-heading {
+  margin: 16px 0 8px;
+  font: inherit;
+  color: var(--dim);
+  text-shadow: none;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.resume-heading::before {
+  content: "== ";
+}
+
+.resume-skills {
+  margin: 0 0 6px;
+}
+
+.resume-skills div {
+  display: grid;
+  grid-template-columns: 25ch 1fr;
+  gap: 0 2ch;
+  margin: 3px 0;
+}
+
+.resume-skills dt {
+  color: var(--dim);
+  text-shadow: none;
+}
+
+.resume-skills dd {
+  margin: 0;
+}
+
+.job {
+  margin: 0 0 14px;
+}
+
+/* Role on the left, dates on the right; the dates drop below when there is no room. */
+.job-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0 2ch;
+  margin: 0 0 4px;
+}
+
+.job-title {
+  margin: 0;
+  font: inherit;
+  color: var(--accent);
+}
+
+.job-dates {
+  color: var(--dim);
+  text-shadow: none;
+  white-space: nowrap;
+}
+
+.job-points {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.job-points li {
+  position: relative;
+  margin: 0 0 4px;
+  padding-left: 2ch;
+}
+
+.job-points li::before {
+  content: "-";
+  position: absolute;
+  left: 0;
+  color: var(--dim);
+}
+
 /* ---------- prompt ---------- */
 .prompt {
   display: flex;
@@ -616,6 +737,11 @@ a {
 }
 
 @media (max-width: 560px) {
+  .resume-skills div {
+    grid-template-columns: 1fr;
+    margin: 8px 0;
+  }
+
   /* At 320px the field would fit about 15 characters beside the full label. */
   .prompt-host {
     display: none;

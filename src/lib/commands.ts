@@ -1,11 +1,13 @@
 export type CommandResult =
   | { kind: "help" }
   | { kind: "about" }
+  | { kind: "resume" }
   | { kind: "projects" }
   | { kind: "project"; slug: string }
   | { kind: "openUsage"; arg: string | null }
   | { kind: "writing" }
   | { kind: "links" }
+  | { kind: "contact" }
   | { kind: "clear" }
   | { kind: "logout" }
   | { kind: "empty" }
@@ -15,9 +17,11 @@ export type CommandResult =
 export const HELP_ITEMS = [
   { command: "help", description: "show this list" },
   { command: "about", description: "who i am" },
+  { command: "resume", description: "experience and skills" },
   { command: "projects", description: "things i've built" },
   { command: "writing", description: "articles on medium" },
   { command: "links", description: "github, linkedin, medium" },
+  { command: "contact", description: "email me, or find me elsewhere" },
   { command: "clear", description: "wipe the screen" },
   { command: "logout", description: "lock the terminal again" },
 ] as const;
@@ -26,10 +30,12 @@ export const HELP_ITEMS = [
 const COMMAND_NAMES = [
   "help",
   "about",
+  "resume",
   "projects",
   "open",
   "writing",
   "links",
+  "contact",
   "clear",
   "logout",
 ] as const;
@@ -38,9 +44,11 @@ const COMMAND_NAMES = [
 const SIMPLE = new Map<string, CommandResult>([
   ["help", { kind: "help" }],
   ["about", { kind: "about" }],
+  ["resume", { kind: "resume" }],
   ["projects", { kind: "projects" }],
   ["writing", { kind: "writing" }],
   ["links", { kind: "links" }],
+  ["contact", { kind: "contact" }],
   ["clear", { kind: "clear" }],
   ["logout", { kind: "logout" }],
 ]);
@@ -48,6 +56,8 @@ const SIMPLE = new Map<string, CommandResult>([
 const ALIASES = new Map<string, string>([
   ["ls", "help"],
   ["whoami", "about"],
+  ["email", "contact"],
+  ["cv", "resume"],
 ]);
 
 /** Optional word between `open` and its argument. */

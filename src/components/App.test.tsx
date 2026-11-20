@@ -76,6 +76,17 @@ describe("App", () => {
     expect(screen.getByText(HELP_HEADING)).toBeInTheDocument();
   });
 
+  it("goes straight to the shell when the lock is skipped, and remembers it", () => {
+    render(<App initialCommand="help" />);
+    fireEvent.keyDown(window, { key: "Enter" });
+    fireEvent.click(screen.getByRole("button", { name: "Skip the lock screen" }));
+    expect(screen.queryByTestId("pattern-pad")).toBeNull();
+    expect(screen.queryByTestId("install")).toBeNull();
+    expect(screen.getByText(HELP_HEADING)).toBeInTheDocument();
+    expect(screen.getByText("terminal unlocked")).toBeInTheDocument();
+    expect(window.localStorage.getItem("ptl.unlocked")).toBe("1");
+  });
+
   it("lets the visitor skip the install text", () => {
     render(<App initialCommand="help" />);
     solveGate();

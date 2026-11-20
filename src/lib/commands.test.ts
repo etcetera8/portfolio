@@ -5,7 +5,7 @@ const SLUGS = ["trainerroad-onboarding", "seattle-311", "copy-pasta"];
 
 describe("parseCommand", () => {
   it("parses each simple command", () => {
-    for (const name of ["help", "about", "projects", "writing", "links", "clear", "logout"]) {
+    for (const name of ["help", "about", "resume", "projects", "writing", "links", "contact", "clear", "logout"]) {
       expect(parseCommand(name, SLUGS)).toEqual({ kind: name });
     }
   });
@@ -13,6 +13,8 @@ describe("parseCommand", () => {
   it("resolves aliases", () => {
     expect(parseCommand("ls", SLUGS)).toEqual({ kind: "help" });
     expect(parseCommand("whoami", SLUGS)).toEqual({ kind: "about" });
+    expect(parseCommand("email", SLUGS)).toEqual({ kind: "contact" });
+    expect(parseCommand("cv", SLUGS)).toEqual({ kind: "resume" });
   });
 
   it("ignores case and surrounding whitespace", () => {
@@ -110,7 +112,7 @@ describe("complete details", () => {
   });
 
   it("completes every command from a unique prefix", () => {
-    const names = ["help", "about", "projects", "open", "writing", "links", "clear", "logout"];
+    const names = ["help", "about", "resume", "projects", "open", "writing", "links", "contact", "clear", "logout"];
     for (const name of names) {
       const prefix = name.slice(0, -1);
       expect(complete(prefix, SLUGS)).toBe(name === "open" ? "open " : name);
@@ -155,6 +157,12 @@ describe("complete", () => {
     expect(complete("open project zzz", SLUGS)).toBeNull();
   });
 
+  it("does not guess between clear and contact", () => {
+    expect(complete("c", SLUGS)).toBeNull();
+    expect(complete("cl", SLUGS)).toBe("clear");
+    expect(complete("co", SLUGS)).toBe("contact");
+  });
+
   it("returns null when the project prefix is ambiguous or unknown", () => {
     expect(complete("open ", SLUGS)).toBeNull();
     expect(complete("open zzz", SLUGS)).toBeNull();
@@ -166,9 +174,11 @@ describe("HELP_ITEMS", () => {
     expect(HELP_ITEMS.map((item) => item.command)).toEqual([
       "help",
       "about",
+      "resume",
       "projects",
       "writing",
       "links",
+      "contact",
       "clear",
       "logout",
     ]);

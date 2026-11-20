@@ -14,7 +14,7 @@ Audience: recruiters, hiring managers and other developers. Many arrive on a pho
 1. **Boot.** A fake startup sequence types out for about 2 seconds. Any key, click or tap skips it. It plays only when the terminal is locked.
 2. **Gate.** The screen shows `PTL`, centred, the line `Draw Pattern to Access Restricted Portfolio`, a small picture of the pattern to draw, a progress bar, and the keypad. The visitor draws P, then T, then L. Each correct pattern fills another third of the bar and moves the picture on to the next letter.
 3. **Install.** Fake package-install output types out for about 2.5 seconds: `access granted.`, `$ npm install portfolio`, one fetch line each for projects, writing and links, `added N packages in 1.2s`, `initializing terminal ...`. The counts come from the site's real content. Any key, click or tap skips it.
-4. **Shell.** A short screen wipe (no Matrix rain), then the banner, status line, and the output of `help` already printed. The visitor types commands or clicks them.
+4. **Shell.** A short screen wipe (no Matrix rain), then the banner, status line, a contact line (the email address as a mail link, then LinkedIn and GitHub) and the output of `help` already printed. The contact line stays in view at the top whatever is run, and is also in the plain-HTML block for crawlers. The visitor types commands or clicks them.
 
 A visitor who has unlocked the gate before in the same browser skips steps 1 to 3. `logout` locks it again.
 
@@ -42,7 +42,9 @@ Chosen direction: "phosphor, toned down".
 
 ### Screen
 
-Top to bottom: the title `PTL` in the display font, centred; the prompt `Draw Pattern to Access Restricted Portfolio`; the pattern guide; the progress bar; the keypad. There is no name banner, hint line or visible status line.
+Top to bottom: the title `PTL` in the display font, centred; the prompt `Draw Pattern to Access Restricted Portfolio`; the pattern guide; the progress bar; the keypad; a small `skip` link. There is no name banner, hint line or visible status line.
+
+The `skip` link is for visitors in a hurry: it opens the terminal at once, with no install text, and is remembered like an unlock, so a reload goes straight in. `logout` locks the terminal again.
 
 The pattern guide is a small, non-interactive picture of the keypad (all nine keys as dots) with the current letter's example path traced on it. Screen readers get the guide as an image labelled `Pattern N of 3: the letter X`.
 
@@ -83,7 +85,7 @@ T cannot be drawn in one stroke without retracing, which is why retracing is all
 
 ### Fitting the screen
 
-The whole gate (title, prompt, guide, pad and the typed-equivalent line) fits without scrolling down to 320x568. The pad shrinks with viewport height, to a minimum of 180px wide, and the guide is smaller on screens under 700px tall. On short landscape screens the text and pad sit side by side.
+The whole gate (title, prompt, guide, progress bar, pad, the typed-equivalent line and the skip link) fits without scrolling down to 320x568. The pad shrinks with viewport height, to a minimum of 180px wide, and the guide is smaller on screens under 700px tall. On short landscape screens the text and pad sit side by side.
 
 ### Typed equivalent
 
@@ -105,12 +107,14 @@ The gate is a toy. All content is present in the delivered HTML so search engine
 
 | Command | Aliases | Output |
 |---|---|---|
-| `help` | `ls` | The commands that need no argument (`help` itself, `about`, `projects`, `writing`, `links`, `clear`, `logout`), each as a clickable chip with a one-line description. `open` is reached through the chips in the `projects` list. |
+| `help` | `ls` | The commands that need no argument (`help` itself, `about`, `resume`, `projects`, `writing`, `links`, `contact`, `clear`, `logout`), each as a clickable chip with a one-line description. `open` is reached through the chips in the `projects` list. |
 | `about` | `whoami` | Bio text. |
+| `resume` | `cv` | The résumé as text: title, summary, skills by group, each job with its dates and bullet points (newest first), and education, with a `pdf version` link to `/parker-lindley-resume.pdf` at the top. No phone number or home city in the text; the PDF has the city but no phone number. Also in the home page's plain-HTML block. |
 | `projects` | | Numbered list of featured projects: name, one-line description, stack tag, `open` chip. |
 | `open <name or number>` | | Project detail: title, role, stack, description, media slot, repo and live links. |
 | `writing` | | Featured articles (title, year, link) and a "more on Medium" link. |
 | `links` | | GitHub, LinkedIn, Medium. |
+| `contact` | `email` | Email address (a mail link), LinkedIn, GitHub. |
 | `clear` | | Empties the output. |
 | `logout` | | Removes the unlock flag, resets the address bar and tab title to the home page, and returns to boot. |
 
@@ -149,11 +153,11 @@ Content lives in typed data files. Adding a project or article is one entry.
 
 | Slug | Title | Stack | Links | Media |
 |---|---|---|---|---|
-| `trainerroad-onboarding` | TrainerRoad onboarding | React, TypeScript, MobX, C#, .NET | none | 100-second muted screen recording of the flow, 1280x736 H.264 MP4 |
-| `seattle-311` | Seattle 311 | TypeScript | live site `https://etcetera8.github.io/seattle-311/`, then `https://github.com/etcetera8/seattle-311` | screenshot of the live site |
-| `copy-pasta` | Copy Pasta | TypeScript | live site `https://copypastaformac.com/`, then `https://github.com/etcetera8/copy-pasta` | screenshot of the live site |
+| `trainerroad-onboarding` | TrainerRoad onboarding | React, TypeScript, MobX, C#, .NET | none | 36-second muted highlights cut of a screen recording of the flow, 1280x736 H.264 MP4 |
+| `seattle-311` | Seattle 311 | React, TypeScript, MapLibre GL, deck.gl, MobX | live site `https://etcetera8.github.io/seattle-311/`, then `https://github.com/etcetera8/seattle-311` | screenshot of the live site |
+| `copy-pasta` | Copy Pasta | Electron, React, TypeScript, MobX, SCSS | live site `https://copypastaformac.com/`, then `https://github.com/etcetera8/copy-pasta` | screenshot of the live site |
 
-Descriptions for the two repos start from their GitHub descriptions ("A map displaying Seattle area 311 data"; "A clipboard utility app. Save copy history for up to seven days, search copy history."). For TrainerRoad, Parker led the project and wrote almost all of it; the role reads "Project lead and primary developer". Its recording has the date-of-birth values on the Profile step painted over.
+TrainerRoad, the professional project, is listed first. Parker led it and wrote almost all of it; the role reads "Project lead and primary developer". Its recording is cut to eight scenes (welcome, connecting platforms, syncing, power profile, power ranking, AI FTP detection, training path, Career page); the Profile and Preferences steps, which show a date of birth and a time zone, are left out. The write-ups for the two repos describe what each does and how it is built, taken from their READMEs and source.
 
 When a project has a deployed site, its `live site` link comes first, before the source link.
 
@@ -217,7 +221,7 @@ src/
     opengraph-image.png  icon.png
     globals.css             every style: tokens, scanlines, gate, terminal
   content/
-    types.ts  about.ts  projects.ts  articles.ts  links.ts
+    types.ts  about.ts  resume.ts  projects.ts  articles.ts  links.ts
   lib/
     pattern.ts              keypad geometry, stroke recording, matching (pure)
     commands.ts             parse input -> typed result; tab completion (pure)

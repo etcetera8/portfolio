@@ -17,6 +17,20 @@ describe("StaticContent", () => {
     expect(screen.getByRole("link", { name: /^github\.com\/etcetera8/ })).toBeInTheDocument();
   });
 
+  it("leaves the résumé off a project's own page", () => {
+    render(<StaticContent slug="seattle-311" />);
+    expect(screen.queryByRole("heading", { name: "resume" })).toBeNull();
+    expect(screen.queryByText(/The Pro's Closet/)).toBeNull();
+  });
+
+  it("gives the email address under the name", () => {
+    render(<StaticContent />);
+    expect(screen.getByRole("link", { name: "parker.t.lindley@gmail.com" })).toHaveAttribute(
+      "href",
+      "mailto:parker.t.lindley@gmail.com",
+    );
+  });
+
   it("does not render media, so hidden content never downloads it", () => {
     const { container } = render(<StaticContent />);
     expect(container.querySelector(".media-slot, .media")).toBeNull();
@@ -38,9 +52,14 @@ describe("StaticContent", () => {
     render(<StaticContent />);
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("PARKER T. LINDLEY");
-    for (const name of ["about", "projects", "writing", "links"]) {
+    for (const name of ["about", "resume", "projects", "writing", "links"]) {
       expect(screen.getByRole("heading", { level: 2, name })).toBeInTheDocument();
     }
+    // The résumé's own sections sit one level down.
+    expect(screen.getByRole("heading", { level: 3, name: "experience" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 4, name: "Senior Software Engineer @ TrainerRoad" }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 3, name: "Seattle 311" })).toBeInTheDocument();
   });
 

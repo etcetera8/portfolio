@@ -3,8 +3,9 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { about } from "@/content/about";
 import { articles, moreArticlesHref } from "@/content/articles";
-import { links } from "@/content/links";
+import { contact, email, links } from "@/content/links";
 import { projects } from "@/content/projects";
+import { resume } from "@/content/resume";
 
 describe("content", () => {
   it("has at least one project", () => {
@@ -31,6 +32,10 @@ describe("content", () => {
       projects.find((project) => project.slug === slug)?.links.find((link) => link.label === "live site")?.href;
     expect(live("seattle-311")).toBe("https://etcetera8.github.io/seattle-311/");
     expect(live("copy-pasta")).toBe("https://copypastaformac.com/");
+  });
+
+  it("leads with the professional project", () => {
+    expect(projects[0].slug).toBe("trainerroad-onboarding");
   });
 
   it("lists finished projects before drafts", () => {
@@ -78,6 +83,40 @@ describe("content", () => {
   it("features articles and the three personal links", () => {
     expect(articles.length).toBeGreaterThan(0);
     expect(links.map((link) => link.label)).toEqual(["github", "linkedin", "medium"]);
+  });
+
+  it("offers email first, then LinkedIn and GitHub, as the ways to get in touch", () => {
+    expect(contact.map((link) => link.label)).toEqual(["email", "linkedin", "github"]);
+    expect(email).toMatch(/^[^@\s]+@[^@\s]+\.[a-z]+$/);
+    expect(contact[0].href).toBe(`mailto:${email}`);
+    for (const link of contact.slice(1)) expect(link.href).toMatch(/^https:\/\//);
+  });
+
+  it("has a résumé with jobs newest first, each with dates and bullet points", () => {
+    expect(resume.title).not.toBe("");
+    expect(resume.summary).not.toBe("");
+    expect(resume.skills.length).toBeGreaterThan(0);
+    expect(resume.education.length).toBeGreaterThan(0);
+    const started = (date: string) => {
+      const [month, year] = date.split("/").map(Number);
+      return year * 12 + month;
+    };
+    for (const job of resume.jobs) {
+      expect(job.from).toMatch(/^(0[1-9]|1[0-2])\/\d{4}$/);
+      expect(job.to).toMatch(/^((0[1-9]|1[0-2])\/\d{4}|present)$/);
+      expect(job.points.length).toBeGreaterThan(0);
+    }
+    const starts = resume.jobs.map((job) => started(job.from));
+    expect(starts).toEqual([...starts].sort((a, b) => b - a));
+  });
+
+  it("points the résumé's PDF at a file that exists under public/", () => {
+    expect(resume.pdf).toMatch(/^\/[a-z0-9-]+\.pdf$/);
+    expect(existsSync(join(process.cwd(), "public", resume.pdf))).toBe(true);
+  });
+
+  it("keeps a phone number out of the public résumé", () => {
+    expect(JSON.stringify(resume)).not.toMatch(/\d{3}[-.\s]\d{3}[-.\s]\d{4}/);
   });
 
   it("has a name, tagline and bio", () => {

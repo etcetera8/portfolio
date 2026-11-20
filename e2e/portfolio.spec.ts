@@ -142,6 +142,20 @@ test("the TrainerRoad screen recording loads and plays", async ({ page, browserN
   await expect.poll(() => read((el) => el.currentTime)).toBeGreaterThan(0);
 });
 
+test("the skip link goes straight to the terminal and is remembered", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByTestId("pattern-pad")).toBeVisible();
+
+  await page.getByRole("button", { name: "Skip the lock screen" }).click();
+  await expect(page.getByText(HELP_HEADING)).toBeVisible();
+  await expect(page.getByTestId("pattern-pad")).toHaveCount(0);
+  await expect(page.getByTestId("install")).toHaveCount(0);
+
+  await page.reload();
+  await expect(page.getByText(HELP_HEADING)).toBeVisible();
+  await expect(page.getByTestId("pattern-pad")).toHaveCount(0);
+});
+
 test("a wrong pattern is denied and the step stays put", async ({ page }) => {
   await page.goto("/");
   const pad = page.getByTestId("pattern-pad");
@@ -253,6 +267,7 @@ test("the gate fits a small phone without scrolling", async ({ page }) => {
     page.getByRole("heading", { level: 1, name: "PTL" }),
     page.getByTestId("pattern-guide"),
     page.getByTestId("gate-progress"),
+    page.getByRole("button", { name: "Skip the lock screen" }),
     pad,
     page.getByLabel("Type the letter shown"),
   ]) {
@@ -288,10 +303,19 @@ test("typed commands work", async ({ page }) => {
   await seedUnlocked(page);
   await page.goto("/");
 
+  // The email address is in view before any command is run.
+  await expect(
+    page.locator("header .contact-line").getByRole("link", { name: "parker.t.lindley@gmail.com" }),
+  ).toHaveAttribute("href", "mailto:parker.t.lindley@gmail.com");
+
   const prompt = page.getByLabel("Command");
   await prompt.fill("links");
   await prompt.press("Enter");
   await expect(page.getByRole("link", { name: /^github\.com\/etcetera8/ })).toBeVisible();
+
+  await prompt.fill("contact");
+  await prompt.press("Enter");
+  await expect(page.getByRole("log").getByRole("link", { name: "parker.t.lindley@gmail.com" })).toBeVisible();
 
   await prompt.fill("nonsense");
   await prompt.press("Enter");
@@ -300,8 +324,8 @@ test("typed commands work", async ({ page }) => {
   // "open project 2" is the same as "open 2": the second project in the list.
   await prompt.fill("open project 2");
   await prompt.press("Enter");
-  await expect(page.getByRole("heading", { name: "Copy Pasta" })).toBeVisible();
-  await expect(page).toHaveURL(/\/projects\/copy-pasta\/$/);
+  await expect(page.getByRole("heading", { name: "Seattle 311" })).toBeVisible();
+  await expect(page).toHaveURL(/\/projects\/seattle-311\/$/);
 });
 
 test("clicking a project's name in the list opens it, not only the chip", async ({ page }) => {
@@ -336,6 +360,19 @@ test("the page does not scroll sideways", async ({ page }) => {
   await expect(page.getByText("copy-pasta", { exact: true })).toBeVisible();
   expect(await overflow()).toBeLessThanOrEqual(0);
 
+  // The résumé: long bullet points, and skill rows that stack on a narrow screen.
+  await prompt.fill("resume");
+  await prompt.press("Enter");
+  await expect(page.getByRole("heading", { name: "Senior Software Engineer @ TrainerRoad" })).toBeVisible();
+  expect(await overflow()).toBeLessThanOrEqual(0);
+  // Its PDF is really served, as a PDF.
+  const pdf = await page.request.get(
+    (await page.getByRole("log").getByRole("link", { name: /^pdf version/ }).getAttribute("href"))!,
+  );
+  expect(pdf.status()).toBe(200);
+  expect(pdf.headers()["content-type"]).toContain("application/pdf");
+  expect((await pdf.body()).subarray(0, 5).toString()).toBe("%PDF-");
+
   // Long unbroken text, in the echoed input and the error.
   const long = "x".repeat(70);
   await prompt.fill(long);
@@ -350,7 +387,7 @@ test("the page does not scroll sideways", async ({ page }) => {
   expect(await overflow()).toBeLessThanOrEqual(0);
 
   // A project with a real screenshot and two links.
-  await prompt.fill("open 1");
+  await prompt.fill("open 2");
   await prompt.press("Enter");
   await expect(page.getByRole("heading", { name: "Seattle 311" })).toBeVisible();
   expect(await overflow()).toBeLessThanOrEqual(0);
@@ -403,7 +440,7 @@ test.describe("without JavaScript", () => {
 
     await page.getByRole("link", { name: "Seattle 311" }).click();
     await expect(page).toHaveURL(/\/projects\/seattle-311\/$/);
-    await expect(page.getByText("A map displaying Seattle area 311 data.")).toBeVisible();
+    await expect(page.getByText(/^An interactive 3D map of Seattle's 311 service requests\./)).toBeVisible();
 
     await page.getByRole("link", { name: "all projects" }).click();
     await expect(page).toHaveURL(/\/$/);

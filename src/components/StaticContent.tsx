@@ -1,4 +1,6 @@
+import { ContactLine } from "@/components/ContactLine";
 import { ProjectOutput } from "@/components/outputs/ProjectOutput";
+import { ResumeOutput } from "@/components/outputs/ResumeOutput";
 import { AboutOutput, LinksOutput, WritingOutput } from "@/components/outputs/TextOutputs";
 import { about } from "@/content/about";
 import { projects } from "@/content/projects";
@@ -14,9 +16,18 @@ export function StaticContent({ slug }: { slug?: string }) {
     <main className="static-content">
       <h1 className="banner">{about.name.toUpperCase()}</h1>
       <p className="meta">{about.tagline}</p>
+      <ContactLine />
 
       <h2 className="static-heading">about</h2>
       <AboutOutput />
+
+      {/* Home page only: a project page is about its project. */}
+      {!slug && (
+        <>
+          <h2 className="static-heading">resume</h2>
+          <ResumeOutput headingLevel={3} />
+        </>
+      )}
 
       <h2 className="static-heading">projects</h2>
       {slug && (

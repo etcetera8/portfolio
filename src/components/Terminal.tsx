@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
 import { Output } from "@/components/outputs/Output";
 import { Prompt, PromptLabel } from "@/components/Prompt";
+import { ContactLine } from "@/components/ContactLine";
 import { about } from "@/content/about";
 import { projects } from "@/content/projects";
 import { hasFinePointer } from "@/lib/media";
@@ -118,6 +119,7 @@ export function Terminal({ initialCommand, onLogout }: Props) {
       <header>
         <h1 className="banner">{about.name.toUpperCase()}</h1>
         <p className="meta">{about.tagline}</p>
+        <ContactLine />
       </header>
 
       <div className="transcript" role="log" aria-live="polite">

@@ -1,7 +1,7 @@
 import { ExtLink } from "@/components/outputs/ExtLink";
 import { about } from "@/content/about";
 import { articles, moreArticlesHref } from "@/content/articles";
-import { links } from "@/content/links";
+import { contact, email, links } from "@/content/links";
 import { projects } from "@/content/projects";
 
 /** "https://www.example.com/path/" -> "example.com/path" */
@@ -38,6 +38,26 @@ export function LinksOutput() {
         <li key={link.href} className="row">
           <span>{link.label}</span>
           <ExtLink href={link.href}>{displayUrl(link.href)}</ExtLink>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export function ContactOutput() {
+  return (
+    <ul className="rows">
+      {contact.map((link) => (
+        <li key={link.href} className="row">
+          <span>{link.label}</span>
+          {link.href.startsWith("mailto:") ? (
+            // Not an ExtLink: a mail link opens the visitor's mail app, not a new tab.
+            <a className="ext" href={link.href}>
+              {email}
+            </a>
+          ) : (
+            <ExtLink href={link.href}>{displayUrl(link.href)}</ExtLink>
+          )}
         </li>
       ))}
     </ul>

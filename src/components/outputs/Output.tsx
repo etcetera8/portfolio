@@ -1,8 +1,10 @@
 import { HelpOutput } from "@/components/outputs/HelpOutput";
 import { ProjectOutput } from "@/components/outputs/ProjectOutput";
 import { ProjectsOutput } from "@/components/outputs/ProjectsOutput";
+import { ResumeOutput } from "@/components/outputs/ResumeOutput";
 import {
   AboutOutput,
+  ContactOutput,
   LinksOutput,
   NotFoundOutput,
   OpenUsageOutput,
@@ -22,6 +24,8 @@ export function Output({ result, onRun }: Props) {
       return <HelpOutput onRun={onRun} />;
     case "about":
       return <AboutOutput />;
+    case "resume":
+      return <ResumeOutput />;
     case "projects":
       return <ProjectsOutput onRun={onRun} />;
     case "project": {
@@ -34,6 +38,8 @@ export function Output({ result, onRun }: Props) {
       return <WritingOutput />;
     case "links":
       return <LinksOutput />;
+    case "contact":
+      return <ContactOutput />;
     case "notFound":
       return <NotFoundOutput input={result.input} />;
     case "empty":

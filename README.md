@@ -45,9 +45,10 @@ NEXT_PUBLIC_SITE_URL=https://example.com npm run build
 All content is in `src/content/`:
 
 - `about.ts`: name, tagline and bio.
+- `resume.ts`: the résumé shown by the `resume` command: title, summary, skills, jobs and education. It leaves out the phone number and home city because the page is public. Its `pdf` field points at `public/parker-lindley-resume.pdf`, the file behind the "pdf version" link; replace that file to update it, and keep the phone number off it.
 - `projects.ts`: the projects, in display order. When a project has a deployed site, list it first in `links` with the label `live site`. Adding a project is one new entry; its page, its sitemap entry and its shell commands (`open <slug>`, `open <number>`) follow from it.
 - `articles.ts`: writing, with year and link.
-- `links.ts`: profile links.
+- `links.ts`: profile links, plus the email address and the `contact` list shown by the `contact` command and in the line under the name banner.
 
 `draft: true` on a project marks its copy as placeholder; no project is a draft at the moment. A draft still appears in the shell, but its page is `noindex`, it is left out of the sitemap, the home page's plain-HTML block shows only its title and summary, and its page description and link-preview text use the summary instead of the description.
 
@@ -61,7 +62,7 @@ media: { kind: "video", src: "/media/seattle-311.mp4", alt: "Short description o
 
 ## How the unlock works
 
-The lock screen shows "PTL", the line "Draw Pattern to Access Restricted Portfolio", a small picture of the pattern to draw, a progress bar that fills by a third for each correct pattern, and the keypad. Visitors draw P, then T, then L. They can instead type the letters p, t, l, either anywhere on the page or into the "or type the letter" field, which stays invisible until it has keyboard focus. After the third pattern, a few lines of package-install text play (any key or tap skips them) and the terminal opens. A successful unlock is remembered in `localStorage` under the key `ptl.unlocked` (value `"1"`), so later visits go straight to the terminal. The `logout` command clears it. If storage is unavailable the gate simply shows each time. A direct link to a project shows the gate first and then that project.
+The lock screen shows "PTL", the line "Draw Pattern to Access Restricted Portfolio", a small picture of the pattern to draw, a progress bar that fills by a third for each correct pattern, and the keypad. Visitors draw P, then T, then L. They can instead type the letters p, t, l, either anywhere on the page or into the "or type the letter" field, which stays invisible until it has keyboard focus. After the third pattern, a few lines of package-install text play (any key or tap skips them) and the terminal opens. A small "skip" link under the keypad opens the terminal straight away for anyone who would rather not draw. A successful unlock is remembered in `localStorage` under the key `ptl.unlocked` (value `"1"`), so later visits go straight to the terminal. The `logout` command clears it. If storage is unavailable the gate simply shows each time. A direct link to a project shows the gate first and then that project.
 
 ## Tests
 

@@ -32,6 +32,6 @@ describe("StaticContent with a draft project", () => {
   it("still shows finished projects in full beside it", () => {
     const { container } = render(<StaticContent />);
     const text = container.textContent ?? "";
-    expect(text).toContain("A map displaying Seattle area 311 data.");
+    expect(text).toContain("An interactive 3D map of Seattle's 311 service requests.");
   });
 });

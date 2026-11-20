@@ -55,7 +55,7 @@ function pressKey(key: string) {
 
 describe("Gate", () => {
   it("shows only the initials, the instruction, the guide and the first step", () => {
-    render(<Gate onUnlock={() => {}} />);
+    render(<Gate onUnlock={() => {}} onSkip={() => {}} />);
     expect(screen.getByRole("heading", { level: 1, name: "PTL" })).toBeInTheDocument();
     expect(screen.getByText("Draw Pattern to Access Restricted Portfolio")).toBeInTheDocument();
     expectStep(1);
@@ -67,7 +67,7 @@ describe("Gate", () => {
   });
 
   it("traces the current letter in the guide: P, then T, then L", () => {
-    render(<Gate onUnlock={() => {}} />);
+    render(<Gate onUnlock={() => {}} onSkip={() => {}} />);
     // P has seven segments; T and L have four each, on different keys.
     expect(guide().querySelectorAll("line")).toHaveLength(7);
 
@@ -88,8 +88,20 @@ describe("Gate", () => {
     expect(guide().querySelector('[data-key="5"]')).not.toHaveClass("on");
   });
 
+  it("offers a visible way to skip the lock, which does not count as unlocking", () => {
+    const onUnlock = vi.fn();
+    const onSkip = vi.fn();
+    render(<Gate onUnlock={onUnlock} onSkip={onSkip} />);
+    const skip = screen.getByRole("button", { name: "Skip the lock screen" });
+    expect(skip).toHaveTextContent("skip");
+    fireEvent.click(skip);
+    expect(onSkip).toHaveBeenCalledTimes(1);
+    wait(GRANT_DELAY * 2);
+    expect(onUnlock).not.toHaveBeenCalled();
+  });
+
   it("fills a third of the progress bar as soon as each pattern is accepted", () => {
-    render(<Gate onUnlock={() => {}} />);
+    render(<Gate onUnlock={() => {}} onSkip={() => {}} />);
     expect(progress()).toHaveAttribute("aria-valuemax", "3");
     expect(progress().querySelectorAll(".gate-bar-block")).toHaveLength(3 * BLOCKS_PER_STAGE);
     expectProgress(0);
@@ -113,7 +125,7 @@ describe("Gate", () => {
   });
 
   it("shows a working indicator until access is granted", () => {
-    const { container } = render(<Gate onUnlock={() => {}} />);
+    const { container } = render(<Gate onUnlock={() => {}} onSkip={() => {}} />);
     expect(screen.getByText(/^authenticating/)).toBeInTheDocument();
     expect(container.querySelector(".ellipsis")).toHaveTextContent("...");
 
@@ -129,7 +141,7 @@ describe("Gate", () => {
   });
 
   it("leaves the progress bar alone after a wrong pattern", () => {
-    render(<Gate onUnlock={() => {}} />);
+    render(<Gate onUnlock={() => {}} onSkip={() => {}} />);
     pressKey("p");
     wait(PASS_DELAY);
     drawPath(pad(), EXAMPLE_PATHS.L);
@@ -139,7 +151,7 @@ describe("Gate", () => {
   });
 
   it("ignores auto-repeated keydowns, so a held key from the boot screen does not type", () => {
-    render(<Gate onUnlock={() => {}} />);
+    render(<Gate onUnlock={() => {}} onSkip={() => {}} />);
     fireEvent.keyDown(window, { key: "p", repeat: true });
     expect(live()).toHaveTextContent("Pattern 1 of 3. Draw the letter P, or type it.");
     pressKey("p");
@@ -147,7 +159,7 @@ describe("Gate", () => {
   });
 
   it("advances when P is drawn", () => {
-    render(<Gate onUnlock={() => {}} />);
+    render(<Gate onUnlock={() => {}} onSkip={() => {}} />);
     drawPath(pad(), EXAMPLE_PATHS.P);
     expect(live()).toHaveTextContent("Pattern 1 of 3 accepted.");
     // The guide changes only once the feedback pause is over.
@@ -159,7 +171,7 @@ describe("Gate", () => {
 
   it("unlocks after P, T and L", () => {
     const onUnlock = vi.fn();
-    render(<Gate onUnlock={onUnlock} />);
+    render(<Gate onUnlock={onUnlock} onSkip={() => {}} />);
     drawPath(pad(), EXAMPLE_PATHS.P);
     wait(PASS_DELAY);
     drawPath(pad(), EXAMPLE_PATHS.T);
@@ -173,7 +185,7 @@ describe("Gate", () => {
   });
 
   it("denies a wrong shape without resetting the step", () => {
-    render(<Gate onUnlock={() => {}} />);
+    render(<Gate onUnlock={() => {}} onSkip={() => {}} />);
     drawPath(pad(), EXAMPLE_PATHS.P);
     wait(PASS_DELAY);
     drawPath(pad(), EXAMPLE_PATHS.L);
@@ -187,7 +199,7 @@ describe("Gate", () => {
 
   it("accepts the letter keys as an equivalent, in either case", () => {
     const onUnlock = vi.fn();
-    render(<Gate onUnlock={onUnlock} />);
+    render(<Gate onUnlock={onUnlock} onSkip={() => {}} />);
     pressKey("p");
     expect(live()).toHaveTextContent("Pattern 1 of 3 accepted.");
     wait(PASS_DELAY);
@@ -199,7 +211,7 @@ describe("Gate", () => {
   });
 
   it("does not count other keys, or the right key with a modifier, as anything", () => {
-    render(<Gate onUnlock={() => {}} />);
+    render(<Gate onUnlock={() => {}} onSkip={() => {}} />);
     pressKey("x");
     pressKey("t");
     fireEvent.keyDown(window, { key: "p", metaKey: true });
@@ -211,7 +223,7 @@ describe("Gate", () => {
   });
 
   it("advances exactly one step for two matching keys in one act", () => {
-    render(<Gate onUnlock={() => {}} />);
+    render(<Gate onUnlock={() => {}} onSkip={() => {}} />);
     act(() => {
       fireEvent.keyDown(window, { key: "p" });
       fireEvent.keyDown(window, { key: "p" });
@@ -222,7 +234,7 @@ describe("Gate", () => {
 
   it("calls onUnlock once however often the last letter is pressed", () => {
     const onUnlock = vi.fn();
-    render(<Gate onUnlock={onUnlock} />);
+    render(<Gate onUnlock={onUnlock} onSkip={() => {}} />);
     pressKey("p");
     wait(PASS_DELAY);
     pressKey("t");
@@ -239,20 +251,20 @@ describe("Gate", () => {
   it("calls the latest onUnlock", () => {
     const first = vi.fn();
     const second = vi.fn();
-    const { rerender } = render(<Gate onUnlock={first} />);
+    const { rerender } = render(<Gate onUnlock={first} onSkip={() => {}} />);
     pressKey("p");
     wait(PASS_DELAY);
     pressKey("t");
     wait(PASS_DELAY);
     pressKey("l");
-    rerender(<Gate onUnlock={second} />);
+    rerender(<Gate onUnlock={second} onSkip={() => {}} />);
     wait(GRANT_DELAY);
     expect(first).not.toHaveBeenCalled();
     expect(second).toHaveBeenCalledTimes(1);
   });
 
   it("ignores a stroke drawn during the feedback window", () => {
-    render(<Gate onUnlock={() => {}} />);
+    render(<Gate onUnlock={() => {}} onSkip={() => {}} />);
     drawPath(pad(), EXAMPLE_PATHS.L);
     expect(live()).toHaveTextContent("Wrong pattern. Try again.");
     // A correct P now must not pass: the pad is still showing the miss.
@@ -268,7 +280,7 @@ describe("Gate", () => {
     const onUnlock = vi.fn();
     const warn = vi.spyOn(console, "error").mockImplementation(() => {});
     for (const stageKeys of [["p"], ["x-deny"], ["p", "t", "l"]]) {
-      const { unmount } = render(<Gate onUnlock={onUnlock} />);
+      const { unmount } = render(<Gate onUnlock={onUnlock} onSkip={() => {}} />);
       for (const key of stageKeys) {
         if (key === "x-deny") drawPath(pad(), EXAMPLE_PATHS.L);
         else {
@@ -284,7 +296,7 @@ describe("Gate", () => {
   });
 
   it("clears the pad after a deny and after a pass", () => {
-    render(<Gate onUnlock={() => {}} />);
+    render(<Gate onUnlock={() => {}} onSkip={() => {}} />);
     drawPath(pad(), EXAMPLE_PATHS.L);
     wait(DENY_DELAY);
     expect(pad().querySelectorAll(".pad-key.on")).toHaveLength(0);
@@ -294,7 +306,7 @@ describe("Gate", () => {
   });
 
   it("does not throw on a keydown with no key", () => {
-    render(<Gate onUnlock={() => {}} />);
+    render(<Gate onUnlock={() => {}} onSkip={() => {}} />);
     const event = new Event("keydown");
     expect(() => window.dispatchEvent(event)).not.toThrow();
     expectStep(1);
@@ -307,7 +319,7 @@ describe("Gate", () => {
 
     it("replays typed letters that arrive during feedback", () => {
       const onUnlock = vi.fn();
-      render(<Gate onUnlock={onUnlock} />);
+      render(<Gate onUnlock={onUnlock} onSkip={() => {}} />);
       type("p");
       type("t");
       type("l");
@@ -323,7 +335,7 @@ describe("Gate", () => {
 
     it("replays window shortcuts that arrive during feedback", () => {
       const onUnlock = vi.fn();
-      render(<Gate onUnlock={onUnlock} />);
+      render(<Gate onUnlock={onUnlock} onSkip={() => {}} />);
       pressKey("p");
       pressKey("t");
       pressKey("l");
@@ -335,7 +347,7 @@ describe("Gate", () => {
     });
 
     it("skips a queued wrong letter", () => {
-      render(<Gate onUnlock={() => {}} />);
+      render(<Gate onUnlock={() => {}} onSkip={() => {}} />);
       type("p");
       type("x");
       type("t");
@@ -347,7 +359,7 @@ describe("Gate", () => {
 
     it("copes with more letters than the queue holds", () => {
       const onUnlock = vi.fn();
-      render(<Gate onUnlock={onUnlock} />);
+      render(<Gate onUnlock={onUnlock} onSkip={() => {}} />);
       for (const letter of "ptlplplpl") type(letter);
       wait(PASS_DELAY * 2);
       wait(GRANT_DELAY * 2);
@@ -355,7 +367,7 @@ describe("Gate", () => {
     });
 
     it("does not queue strokes", () => {
-      render(<Gate onUnlock={() => {}} />);
+      render(<Gate onUnlock={() => {}} onSkip={() => {}} />);
       type("p");
       drawPath(pad(), EXAMPLE_PATHS.T);
       wait(PASS_DELAY);
@@ -370,14 +382,14 @@ describe("Gate", () => {
     }
 
     it("has an input that is not focused on load", () => {
-      render(<Gate onUnlock={() => {}} />);
+      render(<Gate onUnlock={() => {}} onSkip={() => {}} />);
       expect(input()).toBeInTheDocument();
       expect(input()).not.toHaveFocus();
     });
 
     it("unlocks when P, T and L are typed in any case", () => {
       const onUnlock = vi.fn();
-      render(<Gate onUnlock={onUnlock} />);
+      render(<Gate onUnlock={onUnlock} onSkip={() => {}} />);
       fireEvent.change(input(), { target: { value: "p" } });
       expect(live()).toHaveTextContent("Pattern 1 of 3 accepted.");
       expect(input()).toHaveValue("");
@@ -390,13 +402,13 @@ describe("Gate", () => {
     });
 
     it("uses the last character typed", () => {
-      render(<Gate onUnlock={() => {}} />);
+      render(<Gate onUnlock={() => {}} onSkip={() => {}} />);
       fireEvent.change(input(), { target: { value: "xp" } });
       expect(live()).toHaveTextContent("Pattern 1 of 3 accepted.");
     });
 
     it("ignores a wrong character: no step change and no denial", () => {
-      render(<Gate onUnlock={() => {}} />);
+      render(<Gate onUnlock={() => {}} onSkip={() => {}} />);
       fireEvent.change(input(), { target: { value: "x" } });
       fireEvent.change(input(), { target: { value: "t" } });
       fireEvent.change(input(), { target: { value: "x" } });
@@ -406,7 +418,7 @@ describe("Gate", () => {
     });
 
     it("does not double-advance when typing also reaches the window listener", () => {
-      render(<Gate onUnlock={() => {}} />);
+      render(<Gate onUnlock={() => {}} onSkip={() => {}} />);
       fireEvent.keyDown(input(), { key: "p" });
       fireEvent.change(input(), { target: { value: "p" } });
       wait(PASS_DELAY);
@@ -416,7 +428,7 @@ describe("Gate", () => {
     });
 
     it("is disabled once access is granted", () => {
-      render(<Gate onUnlock={() => {}} />);
+      render(<Gate onUnlock={() => {}} onSkip={() => {}} />);
       pressKey("p");
       wait(PASS_DELAY);
       pressKey("t");

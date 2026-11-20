@@ -48,6 +48,12 @@ export function App({ initialCommand }: { initialCommand: string }) {
     else setPhase("install");
   }
 
+  /** The visitor chose not to draw: straight in, with no install text, and remembered like an unlock. */
+  function handleSkip() {
+    setUnlocked();
+    enterShell();
+  }
+
   function handleLogout() {
     clearUnlocked();
     setFromGate(false);
@@ -63,7 +69,7 @@ export function App({ initialCommand }: { initialCommand: string }) {
       </p>
       <div className="app-root">
         {phase === "boot" && <Boot onDone={() => setPhase("gate")} />}
-        {phase === "gate" && <Gate onUnlock={handleUnlock} />}
+        {phase === "gate" && <Gate onUnlock={handleUnlock} onSkip={handleSkip} />}
         {phase === "install" && <Install onDone={enterShell} />}
         {phase === "shell" && (
           <div className={fromGate ? "shell shell-enter" : "shell"}>

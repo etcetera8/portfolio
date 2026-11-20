@@ -22,7 +22,14 @@ type Status = "idle" | "ok" | "denied" | "granted";
 /** Letters typed during feedback that are replayed once the gate is idle again. */
 const QUEUE_LIMIT = 3;
 
-export function Gate({ onUnlock }: { onUnlock: () => void }) {
+type Props = {
+  /** Called once the third pattern has been accepted. */
+  onUnlock: () => void;
+  /** Called when the visitor chooses to go in without drawing. */
+  onSkip: () => void;
+};
+
+export function Gate({ onUnlock, onSkip }: Props) {
   const [stage, setStage] = useState(0);
   const [status, setStatus] = useState<Status>("idle");
   // Changing this remounts the pad, which clears its trace.
@@ -205,6 +212,10 @@ export function Gate({ onUnlock }: { onUnlock: () => void }) {
             disabled={status === "granted"}
           />
         </label>
+        {/* The lock is a flourish; nobody should be stuck behind it. */}
+        <button type="button" className="gate-skip" onClick={onSkip} aria-label="Skip the lock screen">
+          skip
+        </button>
       </div>
     </main>
   );

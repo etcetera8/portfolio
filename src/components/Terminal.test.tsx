@@ -51,9 +51,60 @@ describe("Terminal", () => {
     renderTerminal();
     expect(screen.getByRole("heading", { level: 1, name: "PARKER T. LINDLEY" })).toBeInTheDocument();
     expect(screen.getByText("AVAILABLE COMMANDS (type or click)")).toBeInTheDocument();
-    for (const name of ["help", "about", "projects", "writing", "links", "clear", "logout"]) {
+    for (const name of ["help", "about", "resume", "projects", "writing", "links", "contact", "clear", "logout"]) {
       expect(screen.getByRole("button", { name })).toBeInTheDocument();
     }
+  });
+
+  it("prints the résumé, including through the cv alias", () => {
+    renderTerminal();
+    run("cv");
+    const log = within(screen.getByRole("log"));
+    expect(log.getByText("Senior Frontend Engineer")).toBeInTheDocument();
+    expect(log.getByRole("link", { name: /^pdf version/ })).toHaveAttribute(
+      "href",
+      "/parker-lindley-resume.pdf",
+    );
+    for (const name of ["skills", "experience", "education"]) {
+      expect(log.getByRole("heading", { level: 2, name })).toBeInTheDocument();
+    }
+    // Newest job first, each with its dates.
+    expect(log.getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent)).toEqual([
+      "Frontend Developer (Part-Time) @ The Dyrt",
+      "Senior Software Engineer @ TrainerRoad",
+      "Software Engineer @ The Pro's Closet",
+    ]);
+    expect(log.getByText("04/2020 - 08/2026")).toBeInTheDocument();
+    expect(log.getByText("10/2026 - present")).toBeInTheDocument();
+    expect(log.getByText(/^Led the Plan Builder rewrite/)).toBeInTheDocument();
+    expect(log.getByText("University of South Florida: B.A., Geography")).toBeInTheDocument();
+  });
+
+  it("keeps an email address and profile links in view under the banner", () => {
+    const { container } = renderTerminal();
+    const line = container.querySelector("header .contact-line") as HTMLElement;
+    const email = within(line).getByRole("link", { name: "parker.t.lindley@gmail.com" });
+    expect(email).toHaveAttribute("href", "mailto:parker.t.lindley@gmail.com");
+    // A mail link opens the mail app, so it must not claim to open a new tab.
+    expect(email).not.toHaveAttribute("target");
+    expect(within(line).getByRole("link", { name: /^linkedin/ })).toHaveAttribute(
+      "href",
+      "https://www.linkedin.com/in/parker-lindley/",
+    );
+    expect(within(line).getByRole("link", { name: /^github/ })).toHaveAttribute(
+      "href",
+      "https://github.com/etcetera8",
+    );
+  });
+
+  it("prints the contact details, including through the email alias", () => {
+    renderTerminal();
+    run("email");
+    const rows = within(screen.getByRole("log")).getAllByRole("listitem").slice(-3);
+    expect(rows.map((row) => row.firstElementChild?.textContent)).toEqual(["email", "linkedin", "github"]);
+    expect(within(rows[0]).getByRole("link")).toHaveAttribute("href", "mailto:parker.t.lindley@gmail.com");
+    expect(within(rows[0]).getByRole("link")).toHaveTextContent("parker.t.lindley@gmail.com");
+    expect(within(rows[1]).getByRole("link")).toHaveAccessibleName(/^linkedin\.com\/in\/parker-lindley/);
   });
 
   it("prints the list again when the help chip is clicked", () => {
@@ -73,9 +124,10 @@ describe("Terminal", () => {
 
   it("opens a project by number and puts its URL in the address bar", () => {
     renderTerminal();
-    run("open 1");
+    run("open 2");
     expect(screen.getByRole("heading", { level: 2, name: "Seattle 311" })).toBeInTheDocument();
-    expect(screen.getByText("A map displaying Seattle area 311 data.")).toBeInTheDocument();
+    expect(screen.getByText(/^An interactive 3D map of Seattle's 311 service requests\./)).toBeInTheDocument();
+    expect(screen.getByText("React, TypeScript, MapLibre GL, deck.gl, MobX")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: /^The Seattle 311 map/ })).toHaveAttribute(
       "src",
       "/media/seattle-311.jpg",
