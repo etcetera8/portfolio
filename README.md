@@ -61,12 +61,11 @@ media: { kind: "video", src: "/media/seattle-311.mp4", alt: "Short description o
 
 ### Placeholders still to replace
 
-- The bio in `src/content/about.ts`.
 - The TrainerRoad onboarding project: `role`, `stack`, `description` and its screen recording (`media`). Remove `draft: true` when done.
 
 ## How the unlock works
 
-The lock screen shows "PTL", the line "Draw Pattern to Access Restricted Portfolio", a small picture of the pattern to draw with a 1/3, 2/3, 3/3 counter, and the keypad. Visitors draw P, then T, then L. They can instead type the letters p, t, l, either anywhere on the page or into the "or type the letter" field, which stays invisible until it has keyboard focus. After the third pattern, a few lines of package-install text play (any key or tap skips them) and the terminal opens. A successful unlock is remembered in `localStorage` under the key `ptl.unlocked` (value `"1"`), so later visits go straight to the terminal. The `logout` command clears it. If storage is unavailable the gate simply shows each time. A direct link to a project shows the gate first and then that project.
+The lock screen shows "PTL", the line "Draw Pattern to Access Restricted Portfolio", a small picture of the pattern to draw, a progress bar that fills by a third for each correct pattern, and the keypad. Visitors draw P, then T, then L. They can instead type the letters p, t, l, either anywhere on the page or into the "or type the letter" field, which stays invisible until it has keyboard focus. After the third pattern, a few lines of package-install text play (any key or tap skips them) and the terminal opens. A successful unlock is remembered in `localStorage` under the key `ptl.unlocked` (value `"1"`), so later visits go straight to the terminal. The `logout` command clears it. If storage is unavailable the gate simply shows each time. A direct link to a project shows the gate first and then that project.
 
 ## Tests
 

@@ -11,9 +11,9 @@ Audience: recruiters, hiring managers and other developers. Many arrive on a pho
 
 ## Visitor flow
 
-1. **Boot.** A fake startup sequence types out for about 1.5 seconds. Any key, click or tap skips it. It plays only when the terminal is locked.
-2. **Gate.** The screen shows `PTL`, centred, the line `Draw Pattern to Access Restricted Portfolio`, a small picture of the pattern to draw with a `1/3` counter beside it, and the keypad. The visitor draws P, then T, then L. Each correct pattern moves the picture and the counter on: T with `2/3`, then L with `3/3`.
-3. **Install.** Fake package-install output types out for about 1.75 seconds: `access granted.`, `$ npm install portfolio`, one fetch line each for projects, writing and links, `added N packages in 1.2s`, `initializing terminal ...`. The counts come from the site's real content. Any key, click or tap skips it.
+1. **Boot.** A fake startup sequence types out for about 2 seconds. Any key, click or tap skips it. It plays only when the terminal is locked.
+2. **Gate.** The screen shows `PTL`, centred, the line `Draw Pattern to Access Restricted Portfolio`, a small picture of the pattern to draw, a progress bar, and the keypad. The visitor draws P, then T, then L. Each correct pattern fills another third of the bar and moves the picture on to the next letter.
+3. **Install.** Fake package-install output types out for about 2.5 seconds: `access granted.`, `$ npm install portfolio`, one fetch line each for projects, writing and links, `added N packages in 1.2s`, `initializing terminal ...`. The counts come from the site's real content. Any key, click or tap skips it.
 4. **Shell.** A short screen wipe (no Matrix rain), then the banner, status line, and the output of `help` already printed. The visitor types commands or clicks them.
 
 A visitor who has unlocked the gate before in the same browser skips steps 1 to 3. `logout` locks it again.
@@ -42,13 +42,15 @@ Chosen direction: "phosphor, toned down".
 
 ### Screen
 
-Top to bottom: the title `PTL` in the display font, centred; the prompt `Draw Pattern to Access Restricted Portfolio`; the pattern guide with the step counter to its right; the keypad. There is no name banner, hint line or visible status line.
+Top to bottom: the title `PTL` in the display font, centred; the prompt `Draw Pattern to Access Restricted Portfolio`; the pattern guide; the progress bar; the keypad. There is no name banner, hint line or visible status line.
 
-The pattern guide is a small, non-interactive picture of the keypad (all ten keys as dots) with the current letter's example path traced on it. The guide itself is centred; the counter (`1/3`, `2/3`, `3/3`) hangs to its right. Screen readers get the guide as an image labelled `Pattern N: the letter X`.
+The pattern guide is a small, non-interactive picture of the keypad (all nine keys as dots) with the current letter's example path traced on it. Screen readers get the guide as an image labelled `Pattern N of 3: the letter X`.
+
+The progress bar sits under the guide: 24 blocks in an outlined track, 8 for each pattern. When a pattern is accepted its 8 blocks light one after another, left to right, starting at once rather than after the feedback pause. Under the bar, `authenticating` with dots that appear one by one on a loop shows that something is happening, with the percentage (`0%`, `33%`, `67%`, `100%`) on the right. When the third pattern is accepted the label becomes `identity confirmed`. Screen readers get the bar as a progress bar labelled `Patterns completed`, from 0 to 3. With reduced motion the blocks light at once and the dots do not animate.
 
 ### Keypad
 
-Ten keys laid out like a phone: `1 2 3 / 4 5 6 / 7 8 9`, with `0` centred below. Rendered as SVG so it scales. Uses pointer events, so mouse, touch and pen behave the same. `touch-action: none` on the pad stops the page scrolling during a drag.
+Nine keys in a 3 by 3 grid: `1 2 3 / 4 5 6 / 7 8 9`. Rendered as SVG so it scales. Uses pointer events, so mouse, touch and pen behave the same. `touch-action: none` on the pad stops the page scrolling during a drag.
 
 ### Recording a stroke
 
@@ -65,17 +67,17 @@ A stroke passes when its set of segments equals the target set exactly. Directio
 | Initial | Segments | One way to draw it |
 |---|---|---|
 | P | 1-4, 4-7, 1-2, 2-3, 3-6, 5-6, 4-5 | 7, 4, 1, 2, 3, 6, 5, 4 |
-| T | 1-2, 2-3, 2-5, 5-8, and optionally 0-8 | 1, 2, 3, back to 2, 5, 8 (continuing to 0 is also accepted) |
+| T | 1-2, 2-3, 2-5, 5-8 | 1, 2, 3, back to 2, 5, 8 |
 | L | 1-4, 4-7, 7-8, 8-9 | 1, 4, 7, 8, 9 |
 
-T cannot be drawn in one stroke without retracing, which is why retracing is allowed. T is accepted with its stem ending at 8 or at 0, because the 0 key sits directly below 8 and running the stem through it is a natural way to draw the letter.
+T cannot be drawn in one stroke without retracing, which is why retracing is allowed.
 
 ### Feedback
 
-- Correct: the guide and counter move to the next letter after 300ms. After the third, the install text starts 400ms later.
+- Correct: the progress bar starts filling its next third at once, and the guide moves to the next letter after 300ms. After the third, the install text starts 900ms later, once the bar has filled.
 - Wrong: the trace turns red, the pad shakes, and the pad clears after about 450ms. The stage does not reset to 1.
 - Feedback is brief so that a visitor who starts the next letter straight away is not ignored.
-- Nothing is written on screen for a pass or a miss; the guide, the counter and the pad carry it. Screen readers get a single hidden live line: `Pattern N of 3. Draw the letter X, or type it.` when idle, then `Pattern N of 3 accepted.`, `Wrong pattern. Try again.` or `Access granted.`
+- Nothing is written on screen for a pass or a miss; the guide, the progress bar and the pad carry it. Screen readers get a single hidden live line: `Pattern N of 3. Draw the letter X, or type it.` when idle, then `Pattern N of 3 accepted.`, `Wrong pattern. Try again.` or `Access granted.`
 - There is no ghost trace on the pad. The guide shows the pattern from the start, so misses are not counted.
 - Only the pointer that started a stroke can extend or finish it. A second finger, a right-click or a lost pointer-up never submits a partial pattern.
 
@@ -173,7 +175,7 @@ More on Medium: `https://medium.com/@parkerthomas_2392`
 
 ### About
 
-Placeholder, to be replaced by Parker: "Parker T. Lindley. Fullstack dev. Rides bikes. Writing code since the dial-up days."
+"Impressive. You made it in. I'm Parker T. Lindley, etcetera8 is my gh alias. I've been hacking across the stack for 8+ years. TypeScript, React, C#, .NET are my traditional background but I've dabbled all across the spectrum of various languages. I love pulling things apart and finding out how they work and what makes them tick."
 
 ## Architecture
 
@@ -259,8 +261,8 @@ Boundaries:
 ## Testing
 
 - **Unit (Vitest):** `pattern.ts`: each shape passes when drawn forwards, backwards, in a different stroke order and with retracing; near-misses fail (missing segment, extra segment, wrong initial); pass-through keys are inserted. `commands.ts`: every command and alias, case and whitespace handling, `open` by name and by number, bad arguments, unknown input. `unlock.ts`: behaviour when storage throws.
-- **Component (React Testing Library):** gate shows the title, prompt, guide and counter and advances them through three stages, denies a wrong pattern without moving back, accepts the typed equivalent; the guide traces each letter; the install text reveals, skips and hands over to the shell; terminal prints output for clicks and typed input; history and tab completion.
-- **Browser (Playwright):** run against the real static export in Chromium at a desktop size and a phone size, and in WebKit at an iPhone size. Covers drawing P, T and L and opening a project; a real unlock surviving a reload; denial; the guide, counter and install text at each step; the typed field appearing on focus; direct project links; the typed equivalent; the gate fitting a 320x568 screen; `logout`; typed commands; no sideways scroll at 320px; reduced motion; the no-JavaScript page; page metadata, sitemap and robots; the 404 page; and, in Chromium's phone emulation, drawing with real touch events.
+- **Component (React Testing Library):** gate shows the title, prompt, guide and progress bar and advances them through three stages, denies a wrong pattern without moving back, accepts the typed equivalent; the guide traces each letter; the install text reveals, skips and hands over to the shell; terminal prints output for clicks and typed input; history and tab completion.
+- **Browser (Playwright):** run against the real static export in Chromium at a desktop size and a phone size, and in WebKit at an iPhone size. Covers drawing P, T and L and opening a project; a real unlock surviving a reload; denial; the guide, progress bar and install text at each step; the typed field appearing on focus; direct project links; the typed equivalent; the gate fitting a 320x568 screen; `logout`; typed commands; no sideways scroll at 320px; reduced motion; the no-JavaScript page; page metadata, sitemap and robots; the 404 page; and, in Chromium's phone emulation, drawing with real touch events.
 
 Not covered by automation, and to be checked by hand: drawing with a finger on real iOS and Android devices, the typed field with a phone keyboard, screen readers, and link previews in real messaging apps.
 

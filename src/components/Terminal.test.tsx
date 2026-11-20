@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Terminal } from "@/components/Terminal";
+import { about } from "@/content/about";
 
 beforeEach(() => {
   window.history.replaceState(null, "", "/");
@@ -136,11 +137,7 @@ describe("Terminal", () => {
   it("shows about, including through the whoami alias", () => {
     renderTerminal();
     run("whoami");
-    expect(
-      screen.getByText(
-        "Parker T. Lindley. Fullstack dev. Rides bikes. Writing code since the dial-up days.",
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(about.bio)).toBeInTheDocument();
   });
 
   it("lists the featured articles and a link to the rest", () => {

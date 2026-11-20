@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { DENY_DELAY, GRANT_DELAY, Gate, PASS_DELAY } from "@/components/Gate";
+import { BLOCKS_PER_STAGE, DENY_DELAY, GRANT_DELAY, Gate, PASS_DELAY } from "@/components/Gate";
 import { EXAMPLE_PATHS } from "@/lib/pattern";
 import { drawPath, mockPadRect } from "@/test/draw";
 
@@ -18,14 +18,24 @@ function pad() {
   return screen.getByTestId("pattern-pad");
 }
 
-/** The visible step counter beside the guide, e.g. "1/3". */
-function step() {
-  return screen.getByTestId("gate-step");
-}
-
 /** The mini pattern that shows what to draw. */
 function guide() {
   return screen.getByTestId("pattern-guide");
+}
+
+/** Which pattern the gate is waiting for, read from the guide's label. */
+function expectStep(step: number) {
+  expect(guide()).toHaveAccessibleName(new RegExp(`^Pattern ${step} of 3:`));
+}
+
+/** The bar that fills a third for each accepted pattern. */
+function progress() {
+  return screen.getByTestId("gate-progress");
+}
+
+function expectProgress(done: number) {
+  expect(progress()).toHaveAttribute("aria-valuenow", String(done));
+  expect(progress().querySelectorAll(".gate-bar-block.on")).toHaveLength(done * BLOCKS_PER_STAGE);
 }
 
 /** The screen-reader status line; its text tracks the gate's state. */
@@ -48,7 +58,7 @@ describe("Gate", () => {
     render(<Gate onUnlock={() => {}} />);
     expect(screen.getByRole("heading", { level: 1, name: "PTL" })).toBeInTheDocument();
     expect(screen.getByText("Draw Pattern to Access Restricted Portfolio")).toBeInTheDocument();
-    expect(step()).toHaveTextContent("1/3");
+    expectStep(1);
     expect(guide()).toHaveAccessibleName("Pattern 1 of 3: the letter P");
     // The simplified screen has no name banner, hint line or status line.
     expect(screen.queryByText(/PARKER/)).toBeNull();
@@ -63,7 +73,7 @@ describe("Gate", () => {
 
     pressKey("p");
     wait(PASS_DELAY);
-    expect(step()).toHaveTextContent("2/3");
+    expectStep(2);
     expect(guide()).toHaveAccessibleName("Pattern 2 of 3: the letter T");
     expect(guide().querySelectorAll("line")).toHaveLength(4);
     expect(guide().querySelector('[data-key="5"]')).toHaveClass("on");
@@ -71,11 +81,61 @@ describe("Gate", () => {
 
     pressKey("t");
     wait(PASS_DELAY);
-    expect(step()).toHaveTextContent("3/3");
+    expectStep(3);
     expect(guide()).toHaveAccessibleName("Pattern 3 of 3: the letter L");
     expect(guide().querySelectorAll("line")).toHaveLength(4);
     expect(guide().querySelector('[data-key="7"]')).toHaveClass("on");
     expect(guide().querySelector('[data-key="5"]')).not.toHaveClass("on");
+  });
+
+  it("fills a third of the progress bar as soon as each pattern is accepted", () => {
+    render(<Gate onUnlock={() => {}} />);
+    expect(progress()).toHaveAttribute("aria-valuemax", "3");
+    expect(progress().querySelectorAll(".gate-bar-block")).toHaveLength(3 * BLOCKS_PER_STAGE);
+    expectProgress(0);
+    expect(screen.getByText("0%")).toBeInTheDocument();
+
+    drawPath(pad(), EXAMPLE_PATHS.P);
+    // No waiting for the feedback pause: the bar starts filling at once.
+    expectProgress(1);
+    expect(screen.getByText("33%")).toBeInTheDocument();
+    wait(PASS_DELAY);
+    expectProgress(1);
+
+    drawPath(pad(), EXAMPLE_PATHS.T);
+    expectProgress(2);
+    expect(screen.getByText("67%")).toBeInTheDocument();
+    wait(PASS_DELAY);
+
+    drawPath(pad(), EXAMPLE_PATHS.L);
+    expectProgress(3);
+    expect(screen.getByText("100%")).toBeInTheDocument();
+  });
+
+  it("shows a working indicator until access is granted", () => {
+    const { container } = render(<Gate onUnlock={() => {}} />);
+    expect(screen.getByText(/^authenticating/)).toBeInTheDocument();
+    expect(container.querySelector(".ellipsis")).toHaveTextContent("...");
+
+    pressKey("p");
+    wait(PASS_DELAY);
+    pressKey("t");
+    wait(PASS_DELAY);
+    expect(container.querySelector(".ellipsis")).not.toBeNull();
+
+    pressKey("l");
+    expect(screen.getByText("identity confirmed")).toBeInTheDocument();
+    expect(container.querySelector(".ellipsis")).toBeNull();
+  });
+
+  it("leaves the progress bar alone after a wrong pattern", () => {
+    render(<Gate onUnlock={() => {}} />);
+    pressKey("p");
+    wait(PASS_DELAY);
+    drawPath(pad(), EXAMPLE_PATHS.L);
+    expectProgress(1);
+    wait(DENY_DELAY);
+    expectProgress(1);
   });
 
   it("ignores auto-repeated keydowns, so a held key from the boot screen does not type", () => {
@@ -90,10 +150,10 @@ describe("Gate", () => {
     render(<Gate onUnlock={() => {}} />);
     drawPath(pad(), EXAMPLE_PATHS.P);
     expect(live()).toHaveTextContent("Pattern 1 of 3 accepted.");
-    // The counter and guide change only once the feedback pause is over.
-    expect(step()).toHaveTextContent("1/3");
+    // The guide changes only once the feedback pause is over.
+    expectStep(1);
     wait(PASS_DELAY);
-    expect(step()).toHaveTextContent("2/3");
+    expectStep(2);
     expect(live()).toHaveTextContent("Pattern 2 of 3. Draw the letter T, or type it.");
   });
 
@@ -106,7 +166,7 @@ describe("Gate", () => {
     wait(PASS_DELAY);
     drawPath(pad(), EXAMPLE_PATHS.L);
     expect(live()).toHaveTextContent("Access granted.");
-    expect(step()).toHaveTextContent("3/3");
+    expectStep(3);
     expect(onUnlock).not.toHaveBeenCalled();
     wait(GRANT_DELAY);
     expect(onUnlock).toHaveBeenCalledTimes(1);
@@ -120,7 +180,7 @@ describe("Gate", () => {
     expect(live()).toHaveTextContent("Wrong pattern. Try again.");
     expect(pad()).toHaveClass("denied");
     wait(DENY_DELAY);
-    expect(step()).toHaveTextContent("2/3");
+    expectStep(2);
     expect(live()).toHaveTextContent("Pattern 2 of 3. Draw the letter T, or type it.");
     expect(pad()).not.toHaveClass("denied");
   });
@@ -146,7 +206,7 @@ describe("Gate", () => {
     fireEvent.keyDown(window, { key: "p", ctrlKey: true });
     fireEvent.keyDown(window, { key: "p", altKey: true });
     expect(live()).toHaveTextContent("Pattern 1 of 3. Draw the letter P, or type it.");
-    expect(step()).toHaveTextContent("1/3");
+    expectStep(1);
     expect(pad()).not.toHaveClass("denied");
   });
 
@@ -157,7 +217,7 @@ describe("Gate", () => {
       fireEvent.keyDown(window, { key: "p" });
     });
     wait(PASS_DELAY);
-    expect(step()).toHaveTextContent("2/3");
+    expectStep(2);
   });
 
   it("calls onUnlock once however often the last letter is pressed", () => {
@@ -199,9 +259,9 @@ describe("Gate", () => {
     drawPath(pad(), EXAMPLE_PATHS.P);
     expect(live()).toHaveTextContent("Wrong pattern. Try again.");
     wait(DENY_DELAY);
-    expect(step()).toHaveTextContent("1/3");
+    expectStep(1);
     wait(PASS_DELAY);
-    expect(step()).toHaveTextContent("1/3");
+    expectStep(1);
   });
 
   it("does not call onUnlock or warn when unmounted during a delay", () => {
@@ -237,7 +297,7 @@ describe("Gate", () => {
     render(<Gate onUnlock={() => {}} />);
     const event = new Event("keydown");
     expect(() => window.dispatchEvent(event)).not.toThrow();
-    expect(step()).toHaveTextContent("1/3");
+    expectStep(1);
   });
 
   describe("queued letters", () => {
@@ -252,7 +312,7 @@ describe("Gate", () => {
       type("t");
       type("l");
       wait(PASS_DELAY);
-      expect(step()).toHaveTextContent("2/3");
+      expectStep(2);
       expect(live()).toHaveTextContent("Pattern 2 of 3 accepted.");
       wait(PASS_DELAY);
       expect(live()).toHaveTextContent("Access granted.");
@@ -281,7 +341,7 @@ describe("Gate", () => {
       type("t");
       wait(PASS_DELAY);
       wait(PASS_DELAY);
-      expect(step()).toHaveTextContent("3/3");
+      expectStep(3);
       expect(live()).toHaveTextContent("Pattern 3 of 3. Draw the letter L, or type it.");
     });
 
@@ -299,7 +359,7 @@ describe("Gate", () => {
       type("p");
       drawPath(pad(), EXAMPLE_PATHS.T);
       wait(PASS_DELAY);
-      expect(step()).toHaveTextContent("2/3");
+      expectStep(2);
       expect(live()).toHaveTextContent("Pattern 2 of 3. Draw the letter T, or type it.");
     });
   });
@@ -350,9 +410,9 @@ describe("Gate", () => {
       fireEvent.keyDown(input(), { key: "p" });
       fireEvent.change(input(), { target: { value: "p" } });
       wait(PASS_DELAY);
-      expect(step()).toHaveTextContent("2/3");
+      expectStep(2);
       wait(PASS_DELAY);
-      expect(step()).toHaveTextContent("2/3");
+      expectStep(2);
     });
 
     it("is disabled once access is granted", () => {

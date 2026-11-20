@@ -8,10 +8,10 @@ function guide() {
 }
 
 describe("PatternGuide", () => {
-  it("is a labelled picture of all ten keys", () => {
+  it("is a labelled picture of all nine keys", () => {
     render(<PatternGuide path={EXAMPLE_PATHS.L} label="Pattern 3 of 3: the letter L" />);
     expect(screen.getByRole("img", { name: "Pattern 3 of 3: the letter L" })).toBe(guide());
-    expect(guide().querySelectorAll("circle")).toHaveLength(10);
+    expect(guide().querySelectorAll("circle")).toHaveLength(9);
   });
 
   it("highlights exactly the keys the pattern passes through", () => {

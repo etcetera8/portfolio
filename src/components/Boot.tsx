@@ -11,7 +11,7 @@ export const BOOT_LINES = [
   "identity required.",
 ];
 
-export const LINE_INTERVAL = 250;
+export const LINE_INTERVAL = 350;
 
 /** The startup text shown before the lock screen. */
 export function Boot({ onDone }: { onDone: () => void }) {

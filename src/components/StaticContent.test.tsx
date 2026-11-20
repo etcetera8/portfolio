@@ -1,16 +1,13 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { StaticContent } from "@/components/StaticContent";
+import { about } from "@/content/about";
 import { projects } from "@/content/projects";
 
 describe("StaticContent", () => {
   it("contains the bio, every project, the articles and the links", () => {
     render(<StaticContent />);
-    expect(
-      screen.getByText(
-        "Parker T. Lindley. Fullstack dev. Rides bikes. Writing code since the dial-up days.",
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(about.bio)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "TrainerRoad onboarding" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Seattle 311" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Copy Pasta" })).toBeInTheDocument();

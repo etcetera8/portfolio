@@ -16,10 +16,10 @@ function pad() {
 }
 
 describe("PatternPad", () => {
-  it("renders ten keys with their digits", () => {
+  it("renders nine keys with their digits", () => {
     render(<PatternPad onStroke={() => {}} />);
-    expect(pad().querySelectorAll("circle")).toHaveLength(10);
-    for (const digit of ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]) {
+    expect(pad().querySelectorAll("circle")).toHaveLength(9);
+    for (const digit of ["1", "2", "3", "4", "5", "6", "7", "8", "9"]) {
       expect(screen.getByText(digit)).toBeInTheDocument();
     }
   });
@@ -91,7 +91,7 @@ describe("PatternPad", () => {
 
   it("maps client coordinates through the pad's rect", () => {
     vi.restoreAllMocks();
-    mockPadRect({ left: 20, top: 100, width: 150, height: 200 });
+    mockPadRect({ left: 20, top: 100, width: 150, height: 150 });
     const onStroke = vi.fn();
     render(<PatternPad onStroke={onStroke} />);
     const client = (x: number, y: number) => mouse(20 + x / 2, 100 + y / 2);

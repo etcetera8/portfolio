@@ -59,6 +59,20 @@ async function drawWithTouch(page: Page, keys: readonly Key[]) {
   await cdp.detach();
 }
 
+/** Waits until the gate is ready for pattern `step` of 3: the guide shows that letter. */
+async function expectStep(page: Page, step: number) {
+  await expect(page.getByRole("img", { name: new RegExp(`^Pattern ${step} of 3:`) })).toBeVisible();
+}
+
+/** The progress bar has `done` thirds lit, each a run of blocks from the left. */
+async function expectProgress(page: Page, done: number) {
+  const bar = page.getByTestId("gate-progress");
+  await expect(bar).toHaveAttribute("aria-valuenow", String(done));
+  const blocks = await bar.locator(".gate-bar-block").count();
+  expect(blocks % 3).toBe(0);
+  await expect(bar.locator(".gate-bar-block.on")).toHaveCount((blocks / 3) * done);
+}
+
 /** Seeds the unlock flag before the page loads. */
 async function seedUnlocked(page: Page) {
   await page.addInitScript((key) => window.localStorage.setItem(key, "1"), STORAGE_KEY);
@@ -71,18 +85,20 @@ test("draw P, T and L, then open a project, and the unlock survives a reload", a
   await expect(page.getByTestId("pattern-pad")).toBeVisible();
   await expect(page.getByRole("heading", { level: 1, name: "PTL" })).toBeVisible();
   await expect(page.getByText("Draw Pattern to Access Restricted Portfolio")).toBeVisible();
-  await expect(page.getByTestId("gate-step")).toHaveText("1/3");
+  await expectProgress(page, 0);
+  await expect(page.getByText("authenticating...")).toBeVisible();
   await expect(page.getByRole("img", { name: "Pattern 1 of 3: the letter P" })).toBeVisible();
 
   await draw(page, P);
-  await expect(page.getByTestId("gate-step")).toHaveText("2/3");
+  await expectProgress(page, 1);
   await expect(page.getByRole("img", { name: "Pattern 2 of 3: the letter T" })).toBeVisible();
 
   await draw(page, T);
-  await expect(page.getByTestId("gate-step")).toHaveText("3/3");
+  await expectProgress(page, 2);
   await expect(page.getByRole("img", { name: "Pattern 3 of 3: the letter L" })).toBeVisible();
 
   await draw(page, L);
+  await expectProgress(page, 3);
   // Install-style text plays, then the terminal opens.
   await expect(page.getByTestId("install")).toBeVisible();
   await expect(page.getByText("$ npm install portfolio")).toBeVisible();
@@ -129,7 +145,7 @@ test("a wrong pattern is denied and the step stays put", async ({ page }) => {
   // Afterwards the pad is clear again and the visitor is still on the first pattern.
   await expect(pad).not.toHaveClass(/denied/);
   await expect(pad.locator(".pad-key.on")).toHaveCount(0);
-  await expect(page.getByTestId("gate-step")).toHaveText("1/3");
+  await expectProgress(page, 0);
   await expect(page.getByRole("img", { name: "Pattern 1 of 3: the letter P" })).toBeVisible();
 });
 
@@ -158,7 +174,7 @@ test("a stroke that ends outside the pad still counts (pointer capture)", async 
   await page.mouse.move(outside.x, outside.y, { steps: 4 });
   await page.mouse.up();
 
-  await expect(page.getByTestId("gate-step")).toHaveText("2/3");
+  await expectStep(page, 2);
 });
 
 test("the pad can be drawn on with real touch input", async ({ page, browserName, isMobile }) => {
@@ -167,9 +183,9 @@ test("the pad can be drawn on with real touch input", async ({ page, browserName
   await expect(page.getByTestId("pattern-pad")).toBeVisible();
 
   await drawWithTouch(page, P);
-  await expect(page.getByTestId("gate-step")).toHaveText("2/3");
+  await expectStep(page, 2);
   await drawWithTouch(page, T);
-  await expect(page.getByTestId("gate-step")).toHaveText("3/3");
+  await expectStep(page, 3);
   await drawWithTouch(page, L);
   await expect(page.getByText(HELP_HEADING)).toBeVisible();
 });
@@ -181,9 +197,9 @@ test("a direct project link shows the gate, then that project; keys work as an e
   await expect(page.getByTestId("pattern-pad")).toBeVisible();
 
   await page.keyboard.press("p");
-  await expect(page.getByTestId("gate-step")).toHaveText("2/3");
+  await expectStep(page, 2);
   await page.keyboard.press("t");
-  await expect(page.getByTestId("gate-step")).toHaveText("3/3");
+  await expectStep(page, 3);
   await page.keyboard.press("l");
 
   await expect(page.getByRole("heading", { name: "Copy Pasta" })).toBeVisible();
@@ -222,7 +238,7 @@ test("the gate fits a small phone without scrolling", async ({ page }) => {
   for (const locator of [
     page.getByRole("heading", { level: 1, name: "PTL" }),
     page.getByTestId("pattern-guide"),
-    page.getByTestId("gate-step"),
+    page.getByTestId("gate-progress"),
     pad,
     page.getByLabel("Type the letter shown"),
   ]) {
@@ -339,9 +355,9 @@ test.describe("with reduced motion", () => {
     await page.goto("/");
     await expect(page.getByTestId("pattern-pad")).toBeVisible();
     await page.keyboard.press("p");
-    await expect(page.getByTestId("gate-step")).toHaveText("2/3");
+    await expectStep(page, 2);
     await page.keyboard.press("t");
-    await expect(page.getByTestId("gate-step")).toHaveText("3/3");
+    await expectStep(page, 3);
     await page.keyboard.press("l");
     await expect(page.getByText(HELP_HEADING)).toBeVisible();
 

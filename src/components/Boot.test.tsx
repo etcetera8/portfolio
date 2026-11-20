@@ -31,8 +31,8 @@ describe("Boot", () => {
     expect(onDone).toHaveBeenCalledTimes(1);
   });
 
-  it("finishes in about a second and a half", () => {
-    expect(LINE_INTERVAL * BOOT_LINES.length).toBe(1500);
+  it("finishes in about two seconds", () => {
+    expect(LINE_INTERVAL * BOOT_LINES.length).toBe(2100);
   });
 
   it("tells touch visitors they can tap to skip", () => {

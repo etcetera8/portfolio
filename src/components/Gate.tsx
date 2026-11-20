@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { ChangeEvent } from "react";
+import type { CSSProperties, ChangeEvent } from "react";
 import { PatternGuide } from "@/components/PatternGuide";
 import { PatternPad } from "@/components/PatternPad";
 import { EXAMPLE_PATHS, matchesShape, type Initial, type Key } from "@/lib/pattern";
@@ -10,7 +10,12 @@ const STAGES: readonly Initial[] = ["P", "T", "L"];
 
 export const PASS_DELAY = 300;
 export const DENY_DELAY = 450;
-export const GRANT_DELAY = 400;
+// Long enough for the last third of the progress bar to fill and be seen full.
+export const GRANT_DELAY = 900;
+
+/** Blocks the progress bar lights for each accepted pattern. Matches the stagger in globals.css. */
+export const BLOCKS_PER_STAGE = 8;
+const BLOCK_COUNT = STAGES.length * BLOCKS_PER_STAGE;
 
 type Status = "idle" | "ok" | "denied" | "granted";
 
@@ -116,6 +121,8 @@ export function Gate({ onUnlock }: { onUnlock: () => void }) {
   }
 
   const letter = STAGES[stage];
+  // An accepted pattern counts at once, so the bar starts filling before the guide moves on.
+  const done = stage + (status === "ok" || status === "granted" ? 1 : 0);
   const position = `${stage + 1} of ${STAGES.length}`;
   // Nothing on screen spells out the state, so screen readers get it here.
   const announcement =
@@ -133,14 +140,40 @@ export function Gate({ onUnlock }: { onUnlock: () => void }) {
         <h1 className="gate-title">{STAGES.join("")}</h1>
         <p className="gate-prompt">Draw Pattern to Access Restricted Portfolio</p>
 
-        <div className="gate-guide">
-          <PatternGuide
-            path={EXAMPLE_PATHS[letter]}
-            label={`Pattern ${position}: the letter ${letter}`}
-          />
-          <span className="gate-step" data-testid="gate-step" aria-hidden="true">
-            {`${stage + 1}/${STAGES.length}`}
-          </span>
+        <PatternGuide
+          path={EXAMPLE_PATHS[letter]}
+          label={`Pattern ${position}: the letter ${letter}`}
+        />
+
+        <div className="gate-progress">
+          <div
+            className="gate-bar"
+            data-testid="gate-progress"
+            role="progressbar"
+            aria-label="Patterns completed"
+            aria-valuemin={0}
+            aria-valuemax={STAGES.length}
+            aria-valuenow={done}
+          >
+            {Array.from({ length: BLOCK_COUNT }, (_, index) => (
+              <span
+                key={index}
+                className={index < done * BLOCKS_PER_STAGE ? "gate-bar-block on" : "gate-bar-block"}
+                // Each pattern's blocks light one after another, left to right.
+                style={{ "--order": index % BLOCKS_PER_STAGE } as CSSProperties}
+              />
+            ))}
+          </div>
+          <p className="gate-progress-label" aria-hidden="true">
+            {status === "granted" ? (
+              <span>identity confirmed</span>
+            ) : (
+              <span>
+                authenticating<span className="ellipsis">...</span>
+              </span>
+            )}
+            <span>{Math.round((done / STAGES.length) * 100)}%</span>
+          </p>
         </div>
 
         <p className="sr-only" role="status">

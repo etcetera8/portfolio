@@ -1,14 +1,14 @@
-export type Key = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+export type Key = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 export type Initial = "P" | "T" | "L";
 
 export const PAD_WIDTH = 300;
-export const PAD_HEIGHT = 400;
+export const PAD_HEIGHT = 300;
 export const HIT_RADIUS = 34;
 
 /** Keys in the order they are drawn on the pad. */
-export const KEYS: readonly Key[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0];
+export const KEYS: readonly Key[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
-/** Column and row of each key. Key 0 sits alone in the fourth row. */
+/** Column and row of each key. */
 const GRID: Record<Key, readonly [number, number]> = {
   1: [0, 0],
   2: [1, 0],
@@ -19,7 +19,6 @@ const GRID: Record<Key, readonly [number, number]> = {
   7: [0, 2],
   8: [1, 2],
   9: [2, 2],
-  0: [1, 3],
 };
 
 export function keyPosition(key: Key): readonly [number, number] {
@@ -108,14 +107,11 @@ export function segmentsOf(path: readonly Key[]): Set<string> {
   return segments;
 }
 
-/** Each initial maps to the accepted segment sets; a drawing must equal one exactly. */
-const SHAPES: Record<Initial, readonly (readonly string[])[]> = {
-  P: [["1-4", "4-7", "1-2", "2-3", "3-6", "5-6", "4-5"]],
-  T: [
-    ["1-2", "2-3", "2-5", "5-8"],
-    ["1-2", "2-3", "2-5", "5-8", "0-8"],
-  ],
-  L: [["1-4", "4-7", "7-8", "8-9"]],
+/** Each initial's segments; a drawing must equal the set exactly. */
+const SHAPES: Record<Initial, readonly string[]> = {
+  P: ["1-4", "4-7", "1-2", "2-3", "3-6", "5-6", "4-5"],
+  T: ["1-2", "2-3", "2-5", "5-8"],
+  L: ["1-4", "4-7", "7-8", "8-9"],
 };
 
 /** One valid way to draw each initial. Shown in the lock screen's pattern guide and used in tests. */
@@ -127,7 +123,6 @@ export const EXAMPLE_PATHS: Record<Initial, readonly Key[]> = {
 
 export function matchesShape(path: readonly Key[], initial: Initial): boolean {
   const drawn = segmentsOf(path);
-  return SHAPES[initial].some(
-    (target) => drawn.size === target.length && target.every((segment) => drawn.has(segment)),
-  );
+  const target = SHAPES[initial];
+  return drawn.size === target.length && target.every((segment) => drawn.has(segment));
 }

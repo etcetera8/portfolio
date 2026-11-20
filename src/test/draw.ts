@@ -6,7 +6,7 @@ type PadRect = { left: number; top: number; width: number; height: number };
 
 /**
  * jsdom has no layout, so tests pin the pad's bounding box. The default is the
- * pad's own 300 x 400 coordinate space, where client coordinates equal pad
+ * pad's own 300 x 300 coordinate space, where client coordinates equal pad
  * coordinates. Pass a rect to test the client-to-pad mapping.
  */
 export function mockPadRect(

@@ -22,7 +22,7 @@ export const INSTALL_LINES = [
   "initializing terminal ...",
 ];
 
-export const INSTALL_INTERVAL = 250;
+export const INSTALL_INTERVAL = 350;
 
 /** The package-install text shown between a solved gate and the terminal. */
 export function Install({ onDone }: { onDone: () => void }) {
