@@ -3,6 +3,7 @@ import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "@/components/App";
 import { GRANT_DELAY, PASS_DELAY } from "@/components/Gate";
+import { INSTALL_INTERVAL, INSTALL_LINES } from "@/components/Install";
 
 beforeEach(() => {
   window.localStorage.clear();
@@ -21,14 +22,21 @@ function wait(ms: number) {
   });
 }
 
-function unlockWithKeys() {
-  fireEvent.keyDown(window, { key: "Enter" }); // skip boot
+/** Skips boot (when it is showing) and solves the gate. Leaves the install text on screen. */
+function solveGate() {
+  if (screen.queryByTestId("boot")) fireEvent.keyDown(window, { key: "Enter" });
   fireEvent.keyDown(window, { key: "p" });
   wait(PASS_DELAY);
   fireEvent.keyDown(window, { key: "t" });
   wait(PASS_DELAY);
   fireEvent.keyDown(window, { key: "l" });
   wait(GRANT_DELAY);
+}
+
+/** Solves the gate and lets the install text run to the end, arriving in the shell. */
+function unlockWithKeys() {
+  solveGate();
+  wait(INSTALL_INTERVAL * INSTALL_LINES.length);
 }
 
 function stubReducedMotion() {
@@ -50,7 +58,38 @@ describe("App", () => {
     render(<App initialCommand="help" />);
     fireEvent.keyDown(window, { key: "Enter" });
     expect(screen.queryByTestId("boot")).toBeNull();
-    expect(screen.getByText("identify yourself: draw the initials")).toBeInTheDocument();
+    expect(screen.getByText("Draw Pattern to Access Restricted Portfolio")).toBeInTheDocument();
+  });
+
+  it("plays the install text between the gate and the shell, and remembers the unlock at once", () => {
+    render(<App initialCommand="help" />);
+    solveGate();
+    expect(screen.getByTestId("install")).toBeInTheDocument();
+    expect(screen.queryByTestId("pattern-pad")).toBeNull();
+    expect(screen.queryByText(HELP_HEADING)).toBeNull();
+    // Stored before the text finishes, so a reload now is not locked out again.
+    expect(window.localStorage.getItem("ptl.unlocked")).toBe("1");
+    expect(screen.queryByText("terminal unlocked")).toBeNull();
+
+    wait(INSTALL_INTERVAL * INSTALL_LINES.length);
+    expect(screen.queryByTestId("install")).toBeNull();
+    expect(screen.getByText(HELP_HEADING)).toBeInTheDocument();
+  });
+
+  it("lets the visitor skip the install text", () => {
+    render(<App initialCommand="help" />);
+    solveGate();
+    fireEvent.pointerDown(window);
+    expect(screen.queryByTestId("install")).toBeNull();
+    expect(screen.getByText(HELP_HEADING)).toBeInTheDocument();
+  });
+
+  it("goes from the gate straight to the shell under reduced motion", () => {
+    stubReducedMotion();
+    render(<App initialCommand="help" />);
+    solveGate();
+    expect(screen.queryByTestId("install")).toBeNull();
+    expect(screen.getByText(HELP_HEADING)).toBeInTheDocument();
   });
 
   it("opens the shell and remembers the unlock once the gate is solved", () => {

@@ -9,7 +9,6 @@ import {
   appendKey,
   keyPosition,
   nearestKey,
-  segmentKey,
   type Key,
 } from "@/lib/pattern";
 
@@ -18,32 +17,17 @@ type Point = readonly [number, number];
 type Props = {
   /** Called on pointer-up with the keys visited, when there are at least two. */
   onStroke: (path: readonly Key[]) => void;
-  /** A path to show as a dashed hint, or null for none. */
-  ghost?: readonly Key[] | null;
   /** Shows the current trace as an error. */
   denied?: boolean;
   /** Ignores new strokes. */
   disabled?: boolean;
 };
 
-/** One entry per undirected segment, so a retraced segment is drawn once. */
-function uniqueSegments(path: readonly Key[]): (readonly [Key, Key])[] {
-  const seen = new Set<string>();
-  const result: (readonly [Key, Key])[] = [];
-  for (let index = 1; index < path.length; index++) {
-    const id = segmentKey(path[index - 1], path[index]);
-    if (seen.has(id)) continue;
-    seen.add(id);
-    result.push([path[index - 1], path[index]]);
-  }
-  return result;
-}
-
 function toPoints(path: readonly Key[]): string {
   return path.map((key) => keyPosition(key).join(",")).join(" ");
 }
 
-export function PatternPad({ onStroke, ghost = null, denied = false, disabled = false }: Props) {
+export function PatternPad({ onStroke, denied = false, disabled = false }: Props) {
   // The ref is the source of truth for handlers; state mirrors it for rendering.
   const pathRef = useRef<readonly Key[]>([]);
   // The pointer that owns the current stroke, or null when none is active.
@@ -137,15 +121,6 @@ export function PatternPad({ onStroke, ghost = null, denied = false, disabled = 
       onPointerCancel={handleCancel}
       onLostPointerCapture={handleLostCapture}
     >
-      {ghost && (
-        <g className="pad-ghost" data-testid="pad-ghost">
-          {uniqueSegments(ghost).map(([from, to]) => {
-            const [x1, y1] = keyPosition(from);
-            const [x2, y2] = keyPosition(to);
-            return <line key={segmentKey(from, to)} x1={x1} y1={y1} x2={x2} y2={y2} />;
-          })}
-        </g>
-      )}
       <polyline className="pad-trace" points={trace} />
       {KEYS.map((key) => {
         const [x, y] = keyPosition(key);

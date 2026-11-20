@@ -12,9 +12,9 @@ Audience: recruiters, hiring managers and other developers. Many arrive on a pho
 ## Visitor flow
 
 1. **Boot.** A fake startup sequence types out for about 1.5 seconds. Any key, click or tap skips it. It plays only when the terminal is locked.
-2. **Gate.** The screen shows the name `PARKER T. LINDLEY`, the line `identify yourself: draw the initials`, an `AUTH n/3` indicator, and the keypad. The visitor draws P, then T, then L.
-3. **Access granted.** A short screen wipe (no Matrix rain).
-4. **Shell.** Banner, status line, and the output of `help` already printed. The visitor types commands or clicks them.
+2. **Gate.** The screen shows `PTL`, centred, the line `Draw Pattern to Access Restricted Portfolio`, a small picture of the pattern to draw with a `1/3` counter beside it, and the keypad. The visitor draws P, then T, then L. Each correct pattern moves the picture and the counter on: T with `2/3`, then L with `3/3`.
+3. **Install.** Fake package-install output types out for about 1.75 seconds: `access granted.`, `$ npm install portfolio`, one fetch line each for projects, writing and links, `added N packages in 1.2s`, `initializing terminal ...`. The counts come from the site's real content. Any key, click or tap skips it.
+4. **Shell.** A short screen wipe (no Matrix rain), then the banner, status line, and the output of `help` already printed. The visitor types commands or clicks them.
 
 A visitor who has unlocked the gate before in the same browser skips steps 1 to 3. `logout` locks it again.
 
@@ -36,9 +36,15 @@ Chosen direction: "phosphor, toned down".
 - Blinking block cursor at the prompt.
 - No background rain anywhere.
 - Single column on narrow screens. No horizontal scrolling at 320px width.
-- `prefers-reduced-motion: reduce` skips the boot screen entirely and disables the wipe, the pad shake, the ghost-trace animation and the cursor blink. Content appears immediately.
+- `prefers-reduced-motion: reduce` skips the boot screen and the install text entirely and disables the wipe, the pad shake and the cursor blink. Content appears immediately.
 
 ## The gate
+
+### Screen
+
+Top to bottom: the title `PTL` in the display font, centred; the prompt `Draw Pattern to Access Restricted Portfolio`; the pattern guide with the step counter to its right; the keypad. There is no name banner, hint line or visible status line.
+
+The pattern guide is a small, non-interactive picture of the keypad (all ten keys as dots) with the current letter's example path traced on it. The guide itself is centred; the counter (`1/3`, `2/3`, `3/3`) hangs to its right. Screen readers get the guide as an image labelled `Pattern N: the letter X`.
 
 ### Keypad
 
@@ -66,26 +72,26 @@ T cannot be drawn in one stroke without retracing, which is why retracing is all
 
 ### Feedback
 
-- Correct: `OK n/3`, then the next stage. After the third: `ACCESS GRANTED`, then the wipe.
-- Wrong: the trace turns red, the pad shakes, `ACCESS DENIED`, and the pad clears after about 450ms. The stage does not reset to 1.
-- Feedback is brief (300ms after a correct stroke) so that a visitor who starts the next letter straight away is not ignored.
-- The hint and the status line sit above the pad, so they stay visible on small phones. Screen readers get a single hidden live line: the hint when idle, the status otherwise.
-- After two misses on a stage, a dashed ghost trace of the target shape is drawn on the pad and stays until that stage is passed.
+- Correct: the guide and counter move to the next letter after 300ms. After the third, the install text starts 400ms later.
+- Wrong: the trace turns red, the pad shakes, and the pad clears after about 450ms. The stage does not reset to 1.
+- Feedback is brief so that a visitor who starts the next letter straight away is not ignored.
+- Nothing is written on screen for a pass or a miss; the guide, the counter and the pad carry it. Screen readers get a single hidden live line: `Pattern N of 3. Draw the letter X, or type it.` when idle, then `Pattern N of 3 accepted.`, `Wrong pattern. Try again.` or `Access granted.`
+- There is no ghost trace on the pad. The guide shows the pattern from the start, so misses are not counted.
 - Only the pointer that started a stroke can extend or finish it. A second finger, a right-click or a lost pointer-up never submits a partial pattern.
 
 ### Fitting the screen
 
-The whole gate (text, pad and the typed-equivalent line) fits without scrolling down to 320x568. The pad shrinks with viewport height, to a minimum of 180px wide. On short landscape screens the text and pad sit side by side.
+The whole gate (title, prompt, guide, pad and the typed-equivalent line) fits without scrolling down to 320x568. The pad shrinks with viewport height, to a minimum of 180px wide, and the guide is smaller on screens under 700px tall. On short landscape screens the text and pad sit side by side.
 
 ### Typed equivalent
 
-Under the pad is a visible line, `or type the initials`, with a one-character input. Typing the letter for the current stage (`p`, then `t`, then `l`, case-insensitive) passes that stage. A wrong letter does nothing and is not a miss. Letters typed while feedback is showing are queued, so typing all three at normal speed works. Pressing those keys anywhere on the page, without focusing the input, also works.
+Under the pad is a line, `or type the letter`, with a one-character input. It is invisible until it has keyboard focus (the Tab key or a screen reader reaches it), so the screen stays simple for visitors who draw. Typing the letter for the current stage (`p`, then `t`, then `l`, case-insensitive) passes that stage. A wrong letter does nothing and is not shown as a denial. Letters typed while feedback is showing are queued, so typing all three at normal speed works. Pressing those keys anywhere on the page, without focusing the input, also works.
 
-A drag cannot be performed without a pointer, so this keeps all three stages required without excluding keyboard-only and screen-reader users. It is a real, focusable control rather than hidden instructions because desktop screen readers intercept single letter keys unless an input has focus, and phone screen-reader users have no keyboard until an input summons one. The visible label does not name the letters, so the puzzle is the same for everyone.
+A drag cannot be performed without a pointer, so this keeps all three stages required without excluding keyboard-only and screen-reader users. It is a real, focusable control rather than hidden instructions because desktop screen readers intercept single letter keys unless an input has focus, and phone screen-reader users have no keyboard until an input summons one. The label does not name the letter; the guide and the screen-reader line do, for everyone alike.
 
 ### Persistence
 
-On success, `localStorage["ptl.unlocked"] = "1"`. On load, that value skips boot and gate. `logout` removes it. If `localStorage` is unavailable or throws, the gate simply shows on every visit.
+On success, `localStorage["ptl.unlocked"] = "1"`. It is written as soon as the third pattern passes, before the install text, so a reload during the install text is not locked out again. On load, that value skips boot, gate and install. `logout` removes it. If `localStorage` is unavailable or throws, the gate simply shows on every visit.
 
 ### Not a security boundary
 
@@ -193,7 +199,7 @@ The site must be served from the root of its domain. Subpath hosting is not supp
 - The static block links the home page to each project page and back, and the build emits `sitemap.xml` and `robots.txt`, so crawlers can reach every page.
 - A project marked `draft: true` in its content entry is `noindex` and left out of the sitemap while its copy is placeholder, and the home page's static block shows only its title and one-line summary. It still appears in full in the shell.
 - Until the app mounts, the page shows a single `_` in the accent colour instead of a blank screen.
-- The interactive app always renders an empty CRT frame first, on the server and on the first client render. After mount it reads `localStorage` and moves to boot (locked) or straight to the shell (unlocked). This avoids a hydration mismatch and means returning visitors never see the boot text flash.
+- The interactive app always renders an empty CRT frame first, on the server and on the first client render. After mount it reads `localStorage` and moves to boot (locked) or straight to the shell (unlocked). Boot and install are the same line-reveal component with different text. This avoids a hydration mismatch and means returning visitors never see the boot text flash.
 
 ### Units
 
@@ -215,9 +221,12 @@ src/
     unlock.ts               localStorage read/write/clear, safe when unavailable
     site.ts                 SITE_URL, SITE_NAME, shared metadata helpers
   components/
-    App.tsx                 phase state: init -> boot -> gate -> shell
-    Boot.tsx
-    Gate.tsx                stages, misses, ghost trace, typed equivalent
+    App.tsx                 phase state: init -> boot -> gate -> install -> shell
+    LineSequence.tsx        text revealed a line at a time, skippable
+    Boot.tsx                startup text, before the gate
+    Install.tsx             package-install text, after the gate
+    Gate.tsx                title, prompt, stages, typed equivalent
+    PatternGuide.tsx        small picture of the pattern to draw
     PatternPad.tsx          SVG keypad, pointer handling, trace rendering
     Terminal.tsx            transcript, scroll, runs commands, URL and title
     Prompt.tsx              input, caret, history, tab completion
@@ -243,15 +252,15 @@ Boundaries:
 | `localStorage` unavailable | Gate shows on every visit. No error surfaced. |
 | Unknown project slug in URL | Next.js 404 page, styled as terminal output with a link home. |
 | Unknown command | "command not found" line. |
-| Pointer cancelled mid-stroke | Stroke is discarded, pad clears, no miss counted. |
+| Pointer cancelled mid-stroke | Stroke is discarded, pad clears, nothing is denied. |
 | Media file missing or fails to load | The placeholder slot is shown. |
 | JavaScript disabled | `StaticContent` is shown. |
 
 ## Testing
 
 - **Unit (Vitest):** `pattern.ts`: each shape passes when drawn forwards, backwards, in a different stroke order and with retracing; near-misses fail (missing segment, extra segment, wrong initial); pass-through keys are inserted. `commands.ts`: every command and alias, case and whitespace handling, `open` by name and by number, bad arguments, unknown input. `unlock.ts`: behaviour when storage throws.
-- **Component (React Testing Library):** gate advances through three stages, counts misses per stage, shows the ghost trace after two misses, accepts the typed equivalent; terminal prints output for clicks and typed input; history and tab completion.
-- **Browser (Playwright):** run against the real static export in Chromium at a desktop size and a phone size, and in WebKit at an iPhone size. Covers drawing P, T and L and opening a project; a real unlock surviving a reload; denial and the ghost trace; direct project links; the typed equivalent; the gate fitting a 320x568 screen; `logout`; typed commands; no sideways scroll at 320px; reduced motion; the no-JavaScript page; page metadata, sitemap and robots; the 404 page; and, in Chromium's phone emulation, drawing with real touch events.
+- **Component (React Testing Library):** gate shows the title, prompt, guide and counter and advances them through three stages, denies a wrong pattern without moving back, accepts the typed equivalent; the guide traces each letter; the install text reveals, skips and hands over to the shell; terminal prints output for clicks and typed input; history and tab completion.
+- **Browser (Playwright):** run against the real static export in Chromium at a desktop size and a phone size, and in WebKit at an iPhone size. Covers drawing P, T and L and opening a project; a real unlock surviving a reload; denial; the guide, counter and install text at each step; the typed field appearing on focus; direct project links; the typed equivalent; the gate fitting a 320x568 screen; `logout`; typed commands; no sideways scroll at 320px; reduced motion; the no-JavaScript page; page metadata, sitemap and robots; the 404 page; and, in Chromium's phone emulation, drawing with real touch events.
 
 Not covered by automation, and to be checked by hand: drawing with a finger on real iOS and Android devices, the typed field with a phone keyboard, screen readers, and link previews in real messaging apps.
 

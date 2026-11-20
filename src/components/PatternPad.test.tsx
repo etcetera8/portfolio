@@ -84,18 +84,6 @@ describe("PatternPad", () => {
     expect(onStroke).not.toHaveBeenCalled();
   });
 
-  it("draws the ghost trace only when given one", () => {
-    const { rerender } = render(<PatternPad onStroke={() => {}} />);
-    expect(screen.queryByTestId("pad-ghost")).toBeNull();
-    rerender(<PatternPad onStroke={() => {}} ghost={[1, 4, 7, 8, 9]} />);
-    expect(screen.getByTestId("pad-ghost").querySelectorAll("line")).toHaveLength(4);
-  });
-
-  it("draws each segment of the ghost once, even when the path retraces one", () => {
-    render(<PatternPad onStroke={() => {}} ghost={[1, 2, 3, 2, 5, 8]} />);
-    expect(screen.getByTestId("pad-ghost").querySelectorAll("line")).toHaveLength(4);
-  });
-
   it("adds the denied class when denied", () => {
     render(<PatternPad onStroke={() => {}} denied />);
     expect(pad()).toHaveClass("denied");

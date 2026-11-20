@@ -87,6 +87,19 @@ export function appendKey(path: readonly Key[], next: Key): readonly Key[] {
   return [...path, ...between(last, next), next];
 }
 
+/** One entry per undirected segment, in path order, so a retraced segment appears once. */
+export function uniqueSegments(path: readonly Key[]): (readonly [Key, Key])[] {
+  const seen = new Set<string>();
+  const result: (readonly [Key, Key])[] = [];
+  for (let index = 1; index < path.length; index++) {
+    const id = segmentKey(path[index - 1], path[index]);
+    if (seen.has(id)) continue;
+    seen.add(id);
+    result.push([path[index - 1], path[index]]);
+  }
+  return result;
+}
+
 export function segmentsOf(path: readonly Key[]): Set<string> {
   const segments = new Set<string>();
   for (let index = 1; index < path.length; index++) {
@@ -105,7 +118,7 @@ const SHAPES: Record<Initial, readonly (readonly string[])[]> = {
   L: [["1-4", "4-7", "7-8", "8-9"]],
 };
 
-/** One valid way to draw each initial. Used for the ghost trace and in tests. */
+/** One valid way to draw each initial. Shown in the lock screen's pattern guide and used in tests. */
 export const EXAMPLE_PATHS: Record<Initial, readonly Key[]> = {
   P: [7, 4, 1, 2, 3, 6, 5, 4],
   T: [1, 2, 3, 2, 5, 8],

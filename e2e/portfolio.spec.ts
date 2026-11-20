@@ -67,18 +67,27 @@ async function seedUnlocked(page: Page) {
 test("draw P, T and L, then open a project, and the unlock survives a reload", async ({ page }) => {
   await page.goto("/");
 
-  // The boot sequence finishes on its own.
+  // The boot sequence finishes on its own, leaving the lock screen.
   await expect(page.getByTestId("pattern-pad")).toBeVisible();
-  await expect(page.getByText("AUTH 1/3")).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "PTL" })).toBeVisible();
+  await expect(page.getByText("Draw Pattern to Access Restricted Portfolio")).toBeVisible();
+  await expect(page.getByTestId("gate-step")).toHaveText("1/3");
+  await expect(page.getByRole("img", { name: "Pattern 1 of 3: the letter P" })).toBeVisible();
 
   await draw(page, P);
-  await expect(page.getByText("AUTH 2/3")).toBeVisible();
+  await expect(page.getByTestId("gate-step")).toHaveText("2/3");
+  await expect(page.getByRole("img", { name: "Pattern 2 of 3: the letter T" })).toBeVisible();
 
   await draw(page, T);
-  await expect(page.getByText("AUTH 3/3")).toBeVisible();
+  await expect(page.getByTestId("gate-step")).toHaveText("3/3");
+  await expect(page.getByRole("img", { name: "Pattern 3 of 3: the letter L" })).toBeVisible();
 
   await draw(page, L);
+  // Install-style text plays, then the terminal opens.
+  await expect(page.getByTestId("install")).toBeVisible();
+  await expect(page.getByText("$ npm install portfolio")).toBeVisible();
   await expect(page.getByText(HELP_HEADING)).toBeVisible();
+  await expect(page.getByTestId("install")).toHaveCount(0);
 
   await page.getByRole("button", { name: "projects", exact: true }).click();
   await page.getByRole("button", { name: "open seattle-311", exact: true }).click();
@@ -103,19 +112,25 @@ test("draw P, T and L, then open a project, and the unlock survives a reload", a
   await expect(page.getByTestId("pattern-pad")).toHaveCount(0);
 });
 
-test("a wrong pattern is denied and the stage stays put", async ({ page }) => {
+test("a wrong pattern is denied and the step stays put", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByTestId("pattern-pad")).toBeVisible();
+  const pad = page.getByTestId("pattern-pad");
+  await expect(pad).toBeVisible();
 
-  // The denied state lasts well under a second, so rather than catching it, draw wrong
-  // strokes until the ghost trace (which appears after two misses) shows.
+  // The denied state lasts under half a second. If a check misses it, draw another
+  // wrong stroke and look again.
   await expect(async () => {
     await draw(page, L);
-    await expect(page.getByTestId("pad-ghost")).toBeVisible({ timeout: 1_500 });
+    await expect(page.locator(".gate [role=status]")).toHaveText("Wrong pattern. Try again.", {
+      timeout: 400,
+    });
   }).toPass({ timeout: 15_000 });
 
-  await expect(page.getByTestId("gate-status")).toHaveText("AWAITING INPUT");
-  await expect(page.getByText("AUTH 1/3")).toBeVisible();
+  // Afterwards the pad is clear again and the visitor is still on the first pattern.
+  await expect(pad).not.toHaveClass(/denied/);
+  await expect(pad.locator(".pad-key.on")).toHaveCount(0);
+  await expect(page.getByTestId("gate-step")).toHaveText("1/3");
+  await expect(page.getByRole("img", { name: "Pattern 1 of 3: the letter P" })).toBeVisible();
 });
 
 test("a stroke that ends outside the pad still counts (pointer capture)", async ({ page }) => {
@@ -143,7 +158,7 @@ test("a stroke that ends outside the pad still counts (pointer capture)", async 
   await page.mouse.move(outside.x, outside.y, { steps: 4 });
   await page.mouse.up();
 
-  await expect(page.getByText("AUTH 2/3")).toBeVisible();
+  await expect(page.getByTestId("gate-step")).toHaveText("2/3");
 });
 
 test("the pad can be drawn on with real touch input", async ({ page, browserName, isMobile }) => {
@@ -152,9 +167,9 @@ test("the pad can be drawn on with real touch input", async ({ page, browserName
   await expect(page.getByTestId("pattern-pad")).toBeVisible();
 
   await drawWithTouch(page, P);
-  await expect(page.getByText("AUTH 2/3")).toBeVisible();
+  await expect(page.getByTestId("gate-step")).toHaveText("2/3");
   await drawWithTouch(page, T);
-  await expect(page.getByText("AUTH 3/3")).toBeVisible();
+  await expect(page.getByTestId("gate-step")).toHaveText("3/3");
   await drawWithTouch(page, L);
   await expect(page.getByText(HELP_HEADING)).toBeVisible();
 });
@@ -166,21 +181,27 @@ test("a direct project link shows the gate, then that project; keys work as an e
   await expect(page.getByTestId("pattern-pad")).toBeVisible();
 
   await page.keyboard.press("p");
-  await expect(page.getByText("AUTH 2/3")).toBeVisible();
+  await expect(page.getByTestId("gate-step")).toHaveText("2/3");
   await page.keyboard.press("t");
-  await expect(page.getByText("AUTH 3/3")).toBeVisible();
+  await expect(page.getByTestId("gate-step")).toHaveText("3/3");
   await page.keyboard.press("l");
 
   await expect(page.getByRole("heading", { name: "Copy Pasta" })).toBeVisible();
   await expect(page).toHaveURL(/\/projects\/copy-pasta\/$/);
 });
 
-test("the initials can be typed into the field under the pad, and stay unlocked on reload", async ({
+test("the letters can be typed into a field that appears on focus, and stay unlocked on reload", async ({
   page,
 }) => {
   await page.goto("/");
-  const field = page.getByLabel("Type the initials, one letter at a time");
-  await expect(field).toBeVisible();
+  const field = page.getByLabel("Type the letter shown");
+  await expect(page.getByTestId("pattern-pad")).toBeVisible();
+
+  // Unseen until it is reached with the keyboard.
+  const row = page.locator(".gate-type");
+  await expect(row).toHaveCSS("opacity", "0");
+  await field.focus();
+  await expect(row).toHaveCSS("opacity", "1");
 
   // Typed at a normal pace, without waiting for each stage to settle.
   await field.pressSequentially("ptl", { delay: 100 });
@@ -199,9 +220,11 @@ test("the gate fits a small phone without scrolling", async ({ page }) => {
   await expect(pad).toBeVisible();
 
   for (const locator of [
-    page.getByTestId("gate-status"),
+    page.getByRole("heading", { level: 1, name: "PTL" }),
+    page.getByTestId("pattern-guide"),
+    page.getByTestId("gate-step"),
     pad,
-    page.getByLabel("Type the initials, one letter at a time"),
+    page.getByLabel("Type the letter shown"),
   ]) {
     const box = await locator.boundingBox();
     expect(box).not.toBeNull();
@@ -300,13 +323,14 @@ test("the page does not scroll sideways", async ({ page }) => {
 test.describe("with reduced motion", () => {
   test.use({ reducedMotion: "reduce" });
 
-  test("the boot screen is never shown", async ({ page }) => {
-    // Records any sighting of the boot screen, including ones that last a single frame.
+  test("neither the boot text nor the install text is ever shown", async ({ page }) => {
+    // Records any sighting of either sequence, including ones that last a single frame.
     await page.addInitScript(() => {
-      const seen = { boot: false };
-      Object.assign(window, { __bootSeen: seen });
+      const seen = { boot: false, install: false };
+      Object.assign(window, { __sequencesSeen: seen });
       const check = () => {
         if (document.querySelector('[data-testid="boot"]')) seen.boot = true;
+        if (document.querySelector('[data-testid="install"]')) seen.install = true;
       };
       new MutationObserver(check).observe(document, { childList: true, subtree: true });
       check();
@@ -314,11 +338,19 @@ test.describe("with reduced motion", () => {
 
     await page.goto("/");
     await expect(page.getByTestId("pattern-pad")).toBeVisible();
+    await page.keyboard.press("p");
+    await expect(page.getByTestId("gate-step")).toHaveText("2/3");
+    await page.keyboard.press("t");
+    await expect(page.getByTestId("gate-step")).toHaveText("3/3");
+    await page.keyboard.press("l");
+    await expect(page.getByText(HELP_HEADING)).toBeVisible();
 
     const seen = await page.evaluate(
-      () => (window as unknown as { __bootSeen: { boot: boolean } }).__bootSeen,
+      () =>
+        (window as unknown as { __sequencesSeen: { boot: boolean; install: boolean } })
+          .__sequencesSeen,
     );
-    expect(seen.boot).toBe(false);
+    expect(seen).toEqual({ boot: false, install: false });
   });
 });
 

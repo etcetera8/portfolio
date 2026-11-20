@@ -8,6 +8,7 @@ import {
   nearestKey,
   segmentKey,
   segmentsOf,
+  uniqueSegments,
   type Key,
 } from "@/lib/pattern";
 
@@ -89,6 +90,31 @@ describe("appendKey", () => {
 
   it("allows going back over a key", () => {
     expect(appendKey([1, 2, 3], 2)).toEqual([1, 2, 3, 2]);
+  });
+});
+
+describe("uniqueSegments", () => {
+  it("lists each segment once, in the order first drawn", () => {
+    expect(uniqueSegments([1, 4, 7, 8, 9])).toEqual([
+      [1, 4],
+      [4, 7],
+      [7, 8],
+      [8, 9],
+    ]);
+  });
+
+  it("drops a retraced segment, whichever direction it is retraced in", () => {
+    expect(uniqueSegments(EXAMPLE_PATHS.T)).toEqual([
+      [1, 2],
+      [2, 3],
+      [2, 5],
+      [5, 8],
+    ]);
+  });
+
+  it("is empty for a path with fewer than two keys", () => {
+    expect(uniqueSegments([])).toEqual([]);
+    expect(uniqueSegments([5])).toEqual([]);
   });
 });
 

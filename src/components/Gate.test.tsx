@@ -18,6 +18,21 @@ function pad() {
   return screen.getByTestId("pattern-pad");
 }
 
+/** The visible step counter beside the guide, e.g. "1/3". */
+function step() {
+  return screen.getByTestId("gate-step");
+}
+
+/** The mini pattern that shows what to draw. */
+function guide() {
+  return screen.getByTestId("pattern-guide");
+}
+
+/** The screen-reader status line; its text tracks the gate's state. */
+function live() {
+  return screen.getByRole("status");
+}
+
 function wait(ms: number) {
   act(() => {
     vi.advanceTimersByTime(ms);
@@ -29,30 +44,57 @@ function pressKey(key: string) {
 }
 
 describe("Gate", () => {
-  it("shows the name, the instruction and the first stage", () => {
+  it("shows only the initials, the instruction, the guide and the first step", () => {
     render(<Gate onUnlock={() => {}} />);
-    expect(screen.getByRole("heading", { name: "PARKER T. LINDLEY" })).toBeInTheDocument();
-    expect(screen.getByText("identify yourself: draw the initials")).toBeInTheDocument();
-    expect(screen.getByText("AUTH 1/3")).toBeInTheDocument();
-    expect(screen.getByTestId("gate-status")).toHaveTextContent("AWAITING INPUT");
+    expect(screen.getByRole("heading", { level: 1, name: "PTL" })).toBeInTheDocument();
+    expect(screen.getByText("Draw Pattern to Access Restricted Portfolio")).toBeInTheDocument();
+    expect(step()).toHaveTextContent("1/3");
+    expect(guide()).toHaveAccessibleName("Pattern 1 of 3: the letter P");
+    // The simplified screen has no name banner, hint line or status line.
+    expect(screen.queryByText(/PARKER/)).toBeNull();
+    expect(screen.queryByText(/identify yourself/)).toBeNull();
+    expect(screen.queryByText(/AWAITING INPUT/)).toBeNull();
+  });
+
+  it("traces the current letter in the guide: P, then T, then L", () => {
+    render(<Gate onUnlock={() => {}} />);
+    // P has seven segments; T and L have four each, on different keys.
+    expect(guide().querySelectorAll("line")).toHaveLength(7);
+
+    pressKey("p");
+    wait(PASS_DELAY);
+    expect(step()).toHaveTextContent("2/3");
+    expect(guide()).toHaveAccessibleName("Pattern 2 of 3: the letter T");
+    expect(guide().querySelectorAll("line")).toHaveLength(4);
+    expect(guide().querySelector('[data-key="5"]')).toHaveClass("on");
+    expect(guide().querySelector('[data-key="7"]')).not.toHaveClass("on");
+
+    pressKey("t");
+    wait(PASS_DELAY);
+    expect(step()).toHaveTextContent("3/3");
+    expect(guide()).toHaveAccessibleName("Pattern 3 of 3: the letter L");
+    expect(guide().querySelectorAll("line")).toHaveLength(4);
+    expect(guide().querySelector('[data-key="7"]')).toHaveClass("on");
+    expect(guide().querySelector('[data-key="5"]')).not.toHaveClass("on");
   });
 
   it("ignores auto-repeated keydowns, so a held key from the boot screen does not type", () => {
     render(<Gate onUnlock={() => {}} />);
     fireEvent.keyDown(window, { key: "p", repeat: true });
-    expect(screen.getByTestId("gate-status")).toHaveTextContent("AWAITING INPUT");
-    expect(screen.getByText("AUTH 1/3")).toBeInTheDocument();
+    expect(live()).toHaveTextContent("Pattern 1 of 3. Draw the letter P, or type it.");
     pressKey("p");
-    expect(screen.getByTestId("gate-status")).toHaveTextContent("OK 1/3");
+    expect(live()).toHaveTextContent("Pattern 1 of 3 accepted.");
   });
 
   it("advances when P is drawn", () => {
     render(<Gate onUnlock={() => {}} />);
     drawPath(pad(), EXAMPLE_PATHS.P);
-    expect(screen.getByTestId("gate-status")).toHaveTextContent("OK 1/3");
+    expect(live()).toHaveTextContent("Pattern 1 of 3 accepted.");
+    // The counter and guide change only once the feedback pause is over.
+    expect(step()).toHaveTextContent("1/3");
     wait(PASS_DELAY);
-    expect(screen.getByText("AUTH 2/3")).toBeInTheDocument();
-    expect(screen.getByTestId("gate-status")).toHaveTextContent("AWAITING INPUT");
+    expect(step()).toHaveTextContent("2/3");
+    expect(live()).toHaveTextContent("Pattern 2 of 3. Draw the letter T, or type it.");
   });
 
   it("unlocks after P, T and L", () => {
@@ -63,62 +105,31 @@ describe("Gate", () => {
     drawPath(pad(), EXAMPLE_PATHS.T);
     wait(PASS_DELAY);
     drawPath(pad(), EXAMPLE_PATHS.L);
-    expect(screen.getByTestId("gate-status")).toHaveTextContent("ACCESS GRANTED");
+    expect(live()).toHaveTextContent("Access granted.");
+    expect(step()).toHaveTextContent("3/3");
     expect(onUnlock).not.toHaveBeenCalled();
     wait(GRANT_DELAY);
     expect(onUnlock).toHaveBeenCalledTimes(1);
   });
 
-  it("denies a wrong shape without resetting the stage", () => {
+  it("denies a wrong shape without resetting the step", () => {
     render(<Gate onUnlock={() => {}} />);
     drawPath(pad(), EXAMPLE_PATHS.P);
     wait(PASS_DELAY);
     drawPath(pad(), EXAMPLE_PATHS.L);
-    expect(screen.getByTestId("gate-status")).toHaveTextContent("ACCESS DENIED");
+    expect(live()).toHaveTextContent("Wrong pattern. Try again.");
     expect(pad()).toHaveClass("denied");
     wait(DENY_DELAY);
-    expect(screen.getByText("AUTH 2/3")).toBeInTheDocument();
-    expect(screen.getByTestId("gate-status")).toHaveTextContent("AWAITING INPUT");
+    expect(step()).toHaveTextContent("2/3");
+    expect(live()).toHaveTextContent("Pattern 2 of 3. Draw the letter T, or type it.");
     expect(pad()).not.toHaveClass("denied");
-  });
-
-  it("shows the ghost trace after two misses on a stage, not while denied, and removes it once passed", () => {
-    render(<Gate onUnlock={() => {}} />);
-    expect(screen.queryByTestId("pad-ghost")).toBeNull();
-
-    drawPath(pad(), EXAMPLE_PATHS.L);
-    wait(DENY_DELAY);
-    expect(screen.queryByTestId("pad-ghost")).toBeNull();
-
-    drawPath(pad(), EXAMPLE_PATHS.T);
-    expect(screen.getByTestId("gate-status")).toHaveTextContent("ACCESS DENIED");
-    expect(screen.queryByTestId("pad-ghost")).toBeNull();
-    wait(DENY_DELAY);
-    // Stage P: seven unique segments.
-    expect(screen.getByTestId("pad-ghost").querySelectorAll("line")).toHaveLength(7);
-
-    drawPath(pad(), EXAMPLE_PATHS.P);
-    wait(PASS_DELAY);
-    expect(screen.queryByTestId("pad-ghost")).toBeNull();
-  });
-
-  it("shows the ghost for the current stage", () => {
-    render(<Gate onUnlock={() => {}} />);
-    pressKey("p");
-    wait(PASS_DELAY);
-    drawPath(pad(), EXAMPLE_PATHS.L);
-    wait(DENY_DELAY);
-    drawPath(pad(), EXAMPLE_PATHS.L);
-    wait(DENY_DELAY);
-    // Stage T: four unique segments, not the seven of P.
-    expect(screen.getByTestId("pad-ghost").querySelectorAll("line")).toHaveLength(4);
   });
 
   it("accepts the letter keys as an equivalent, in either case", () => {
     const onUnlock = vi.fn();
     render(<Gate onUnlock={onUnlock} />);
     pressKey("p");
-    expect(screen.getByTestId("gate-status")).toHaveTextContent("OK 1/3");
+    expect(live()).toHaveTextContent("Pattern 1 of 3 accepted.");
     wait(PASS_DELAY);
     pressKey("T");
     wait(PASS_DELAY);
@@ -132,27 +143,21 @@ describe("Gate", () => {
     pressKey("x");
     pressKey("t");
     fireEvent.keyDown(window, { key: "p", metaKey: true });
-    expect(screen.getByTestId("gate-status")).toHaveTextContent("AWAITING INPUT");
-    expect(screen.getByText("AUTH 1/3")).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: "p", ctrlKey: true });
+    fireEvent.keyDown(window, { key: "p", altKey: true });
+    expect(live()).toHaveTextContent("Pattern 1 of 3. Draw the letter P, or type it.");
+    expect(step()).toHaveTextContent("1/3");
+    expect(pad()).not.toHaveClass("denied");
   });
 
-  it("ignores input while feedback is showing", () => {
-    render(<Gate onUnlock={() => {}} />);
-    drawPath(pad(), EXAMPLE_PATHS.L);
-    pressKey("p");
-    expect(screen.getByTestId("gate-status")).toHaveTextContent("ACCESS DENIED");
-    wait(DENY_DELAY);
-    expect(screen.getByText("AUTH 1/3")).toBeInTheDocument();
-  });
-
-  it("advances exactly one stage for two matching keys in one act", () => {
+  it("advances exactly one step for two matching keys in one act", () => {
     render(<Gate onUnlock={() => {}} />);
     act(() => {
       fireEvent.keyDown(window, { key: "p" });
       fireEvent.keyDown(window, { key: "p" });
     });
     wait(PASS_DELAY);
-    expect(screen.getByText("AUTH 2/3")).toBeInTheDocument();
+    expect(step()).toHaveTextContent("2/3");
   });
 
   it("calls onUnlock once however often the last letter is pressed", () => {
@@ -186,26 +191,17 @@ describe("Gate", () => {
     expect(second).toHaveBeenCalledTimes(1);
   });
 
-  it("announces the hint when idle and the result after a miss, through the live region", () => {
-    render(<Gate onUnlock={() => {}} />);
-    const live = screen.getByRole("status");
-    expect(live).toHaveTextContent("draw the first initial");
-    expect(live).not.toHaveTextContent(">");
-    drawPath(pad(), EXAMPLE_PATHS.L);
-    expect(live).toHaveTextContent("ACCESS DENIED");
-    expect(screen.getByTestId("gate-status").closest("[aria-hidden='true']")).not.toBeNull();
-  });
-
   it("ignores a stroke drawn during the feedback window", () => {
     render(<Gate onUnlock={() => {}} />);
     drawPath(pad(), EXAMPLE_PATHS.L);
-    expect(screen.getByTestId("gate-status")).toHaveTextContent("ACCESS DENIED");
+    expect(live()).toHaveTextContent("Wrong pattern. Try again.");
+    // A correct P now must not pass: the pad is still showing the miss.
     drawPath(pad(), EXAMPLE_PATHS.P);
-    expect(screen.getByTestId("gate-status")).toHaveTextContent("ACCESS DENIED");
+    expect(live()).toHaveTextContent("Wrong pattern. Try again.");
     wait(DENY_DELAY);
-    expect(screen.getByText("AUTH 1/3")).toBeInTheDocument();
-    // One miss only (the P stroke was ignored, not a second miss): the ghost needs two.
-    expect(screen.queryByTestId("pad-ghost")).toBeNull();
+    expect(step()).toHaveTextContent("1/3");
+    wait(PASS_DELAY);
+    expect(step()).toHaveTextContent("1/3");
   });
 
   it("does not call onUnlock or warn when unmounted during a delay", () => {
@@ -227,14 +223,6 @@ describe("Gate", () => {
     expect(warn).not.toHaveBeenCalled();
   });
 
-  it("does nothing for the right key with ctrl or alt held", () => {
-    render(<Gate onUnlock={() => {}} />);
-    fireEvent.keyDown(window, { key: "p", ctrlKey: true });
-    fireEvent.keyDown(window, { key: "p", altKey: true });
-    expect(screen.getByTestId("gate-status")).toHaveTextContent("AWAITING INPUT");
-    expect(screen.getByText("AUTH 1/3")).toBeInTheDocument();
-  });
-
   it("clears the pad after a deny and after a pass", () => {
     render(<Gate onUnlock={() => {}} />);
     drawPath(pad(), EXAMPLE_PATHS.L);
@@ -249,7 +237,7 @@ describe("Gate", () => {
     render(<Gate onUnlock={() => {}} />);
     const event = new Event("keydown");
     expect(() => window.dispatchEvent(event)).not.toThrow();
-    expect(screen.getByTestId("gate-status")).toHaveTextContent("AWAITING INPUT");
+    expect(step()).toHaveTextContent("1/3");
   });
 
   describe("queued letters", () => {
@@ -264,10 +252,10 @@ describe("Gate", () => {
       type("t");
       type("l");
       wait(PASS_DELAY);
-      expect(screen.getByText("AUTH 2/3")).toBeInTheDocument();
-      expect(screen.getByTestId("gate-status")).toHaveTextContent("OK 2/3");
+      expect(step()).toHaveTextContent("2/3");
+      expect(live()).toHaveTextContent("Pattern 2 of 3 accepted.");
       wait(PASS_DELAY);
-      expect(screen.getByTestId("gate-status")).toHaveTextContent("ACCESS GRANTED");
+      expect(live()).toHaveTextContent("Access granted.");
       expect(onUnlock).not.toHaveBeenCalled();
       wait(GRANT_DELAY);
       expect(onUnlock).toHaveBeenCalledTimes(1);
@@ -281,7 +269,7 @@ describe("Gate", () => {
       pressKey("l");
       wait(PASS_DELAY);
       wait(PASS_DELAY);
-      expect(screen.getByTestId("gate-status")).toHaveTextContent("ACCESS GRANTED");
+      expect(live()).toHaveTextContent("Access granted.");
       wait(GRANT_DELAY);
       expect(onUnlock).toHaveBeenCalledTimes(1);
     });
@@ -293,8 +281,8 @@ describe("Gate", () => {
       type("t");
       wait(PASS_DELAY);
       wait(PASS_DELAY);
-      expect(screen.getByTestId("gate-status")).toHaveTextContent("AWAITING INPUT");
-      expect(screen.getByText("AUTH 3/3")).toBeInTheDocument();
+      expect(step()).toHaveTextContent("3/3");
+      expect(live()).toHaveTextContent("Pattern 3 of 3. Draw the letter L, or type it.");
     });
 
     it("copes with more letters than the queue holds", () => {
@@ -311,14 +299,14 @@ describe("Gate", () => {
       type("p");
       drawPath(pad(), EXAMPLE_PATHS.T);
       wait(PASS_DELAY);
-      expect(screen.getByText("AUTH 2/3")).toBeInTheDocument();
-      expect(screen.getByTestId("gate-status")).toHaveTextContent("AWAITING INPUT");
+      expect(step()).toHaveTextContent("2/3");
+      expect(live()).toHaveTextContent("Pattern 2 of 3. Draw the letter T, or type it.");
     });
   });
 
   describe("typed alternative", () => {
     function input() {
-      return screen.getByRole("textbox", { name: "Type the initials, one letter at a time" });
+      return screen.getByRole("textbox", { name: "Type the letter shown" });
     }
 
     it("has an input that is not focused on load", () => {
@@ -331,7 +319,7 @@ describe("Gate", () => {
       const onUnlock = vi.fn();
       render(<Gate onUnlock={onUnlock} />);
       fireEvent.change(input(), { target: { value: "p" } });
-      expect(screen.getByTestId("gate-status")).toHaveTextContent("OK 1/3");
+      expect(live()).toHaveTextContent("Pattern 1 of 3 accepted.");
       expect(input()).toHaveValue("");
       wait(PASS_DELAY);
       fireEvent.change(input(), { target: { value: "T" } });
@@ -344,20 +332,17 @@ describe("Gate", () => {
     it("uses the last character typed", () => {
       render(<Gate onUnlock={() => {}} />);
       fireEvent.change(input(), { target: { value: "xp" } });
-      expect(screen.getByTestId("gate-status")).toHaveTextContent("OK 1/3");
+      expect(live()).toHaveTextContent("Pattern 1 of 3 accepted.");
     });
 
-    it("ignores a wrong character without counting a miss", () => {
+    it("ignores a wrong character: no step change and no denial", () => {
       render(<Gate onUnlock={() => {}} />);
       fireEvent.change(input(), { target: { value: "x" } });
       fireEvent.change(input(), { target: { value: "t" } });
       fireEvent.change(input(), { target: { value: "x" } });
-      expect(screen.getByTestId("gate-status")).toHaveTextContent("AWAITING INPUT");
+      expect(live()).toHaveTextContent("Pattern 1 of 3. Draw the letter P, or type it.");
+      expect(pad()).not.toHaveClass("denied");
       expect(input()).toHaveValue("");
-      drawPath(pad(), EXAMPLE_PATHS.L);
-      wait(DENY_DELAY);
-      // One miss only: the ghost needs two.
-      expect(screen.queryByTestId("pad-ghost")).toBeNull();
     });
 
     it("does not double-advance when typing also reaches the window listener", () => {
@@ -365,16 +350,19 @@ describe("Gate", () => {
       fireEvent.keyDown(input(), { key: "p" });
       fireEvent.change(input(), { target: { value: "p" } });
       wait(PASS_DELAY);
-      expect(screen.getByText("AUTH 2/3")).toBeInTheDocument();
+      expect(step()).toHaveTextContent("2/3");
+      wait(PASS_DELAY);
+      expect(step()).toHaveTextContent("2/3");
     });
 
-    it("ignores typing while feedback is showing", () => {
+    it("is disabled once access is granted", () => {
       render(<Gate onUnlock={() => {}} />);
-      drawPath(pad(), EXAMPLE_PATHS.L);
-      fireEvent.change(input(), { target: { value: "p" } });
-      expect(screen.getByTestId("gate-status")).toHaveTextContent("ACCESS DENIED");
-      wait(DENY_DELAY);
-      expect(screen.getByText("AUTH 1/3")).toBeInTheDocument();
+      pressKey("p");
+      wait(PASS_DELAY);
+      pressKey("t");
+      wait(PASS_DELAY);
+      pressKey("l");
+      expect(input()).toBeDisabled();
     });
   });
 });

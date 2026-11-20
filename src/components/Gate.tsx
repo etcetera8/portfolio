@@ -2,19 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
+import { PatternGuide } from "@/components/PatternGuide";
 import { PatternPad } from "@/components/PatternPad";
-import { about } from "@/content/about";
 import { EXAMPLE_PATHS, matchesShape, type Initial, type Key } from "@/lib/pattern";
 
 const STAGES: readonly Initial[] = ["P", "T", "L"];
-const HINTS = ["draw the first initial", "draw the middle initial", "draw the last initial"];
 
 export const PASS_DELAY = 300;
 export const DENY_DELAY = 450;
-export const GRANT_DELAY = 700;
-
-/** Misses on one stage before the ghost trace appears. */
-const GHOST_AFTER = 2;
+export const GRANT_DELAY = 400;
 
 type Status = "idle" | "ok" | "denied" | "granted";
 
@@ -23,7 +19,6 @@ const QUEUE_LIMIT = 3;
 
 export function Gate({ onUnlock }: { onUnlock: () => void }) {
   const [stage, setStage] = useState(0);
-  const [misses, setMisses] = useState(0);
   const [status, setStatus] = useState<Status>("idle");
   // Changing this remounts the pad, which clears its trace.
   const [attempt, setAttempt] = useState(0);
@@ -62,7 +57,6 @@ export function Gate({ onUnlock }: { onUnlock: () => void }) {
     timer.current = setTimeout(() => {
       stageRef.current += 1;
       setStage(stageRef.current);
-      setMisses(0);
       returnToIdle();
     }, PASS_DELAY);
   }
@@ -70,7 +64,6 @@ export function Gate({ onUnlock }: { onUnlock: () => void }) {
   function miss() {
     busyRef.current = true;
     setStatus("denied");
-    setMisses((current) => current + 1);
     timer.current = setTimeout(returnToIdle, DENY_DELAY);
   }
 
@@ -122,47 +115,36 @@ export function Gate({ onUnlock }: { onUnlock: () => void }) {
     if (typed !== "") enterLetter(typed);
   }
 
-  const solved = status === "granted" ? STAGES.length : stage;
-  const statusText =
+  const letter = STAGES[stage];
+  const position = `${stage + 1} of ${STAGES.length}`;
+  // Nothing on screen spells out the state, so screen readers get it here.
+  const announcement =
     status === "ok"
-      ? `OK ${stage + 1}/3`
+      ? `Pattern ${position} accepted.`
       : status === "denied"
-        ? "ACCESS DENIED"
+        ? "Wrong pattern. Try again."
         : status === "granted"
-          ? "ACCESS GRANTED"
-          : "AWAITING INPUT";
+          ? "Access granted."
+          : `Pattern ${position}. Draw the letter ${letter}, or type it.`;
 
   return (
     <main className="gate">
       <div className="gate-text">
-        <h1 className="banner">{about.name.toUpperCase()}</h1>
-        <p className="gate-prompt">identify yourself: draw the initials</p>
+        <h1 className="gate-title">{STAGES.join("")}</h1>
+        <p className="gate-prompt">Draw Pattern to Access Restricted Portfolio</p>
 
-        <p className="gate-auth">
-          <span>{`AUTH ${stage + 1}/3`}</span>
-          <span className="gate-slots" aria-hidden="true">
-            {STAGES.map((letter, index) => (
-              <span
-                key={letter}
-                className={index < solved ? "slot done" : index === stage ? "slot now" : "slot"}
-              >
-                {index < solved ? letter : "_"}
-              </span>
-            ))}
+        <div className="gate-guide">
+          <PatternGuide
+            path={EXAMPLE_PATHS[letter]}
+            label={`Pattern ${position}: the letter ${letter}`}
+          />
+          <span className="gate-step" data-testid="gate-step" aria-hidden="true">
+            {`${stage + 1}/${STAGES.length}`}
           </span>
-        </p>
-
-        <div className="gate-readout" aria-hidden="true">
-          <p className="gate-hint">{`> ${HINTS[stage]}`}</p>
-          <p
-            className={status === "denied" ? "gate-status denied" : "gate-status"}
-            data-testid="gate-status"
-          >
-            {statusText}
-          </p>
         </div>
+
         <p className="sr-only" role="status">
-          {status === "idle" ? HINTS[stage] : statusText}
+          {announcement}
         </p>
       </div>
 
@@ -170,17 +152,17 @@ export function Gate({ onUnlock }: { onUnlock: () => void }) {
         <PatternPad
           key={attempt}
           onStroke={handleStroke}
-          ghost={misses >= GHOST_AFTER && status !== "denied" ? EXAMPLE_PATHS[STAGES[stage]] : null}
           denied={status === "denied"}
           disabled={status !== "idle"}
         />
+        {/* For people who cannot drag. Unseen until it is reached with the keyboard. */}
         <label className="gate-type">
-          <span>or type the initials</span>
+          <span>or type the letter</span>
           <input
             className="gate-input"
             value=""
             onChange={handleType}
-            aria-label="Type the initials, one letter at a time"
+            aria-label="Type the letter shown"
             autoCapitalize="none"
             autoComplete="off"
             autoCorrect="off"
