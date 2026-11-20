@@ -105,7 +105,7 @@ The gate is a toy. All content is present in the delivered HTML so search engine
 
 | Command | Aliases | Output |
 |---|---|---|
-| `help` | `ls` | The commands that need no argument (`about`, `projects`, `writing`, `links`, `clear`, `logout`), each as a clickable chip with a one-line description. `open` is reached through the chips in the `projects` list. |
+| `help` | `ls` | The commands that need no argument (`help` itself, `about`, `projects`, `writing`, `links`, `clear`, `logout`), each as a clickable chip with a one-line description. `open` is reached through the chips in the `projects` list. |
 | `about` | `whoami` | Bio text. |
 | `projects` | | Numbered list of featured projects: name, one-line description, stack tag, `open` chip. |
 | `open <name or number>` | | Project detail: title, role, stack, description, media slot, repo and live links. |

@@ -13,6 +13,7 @@ export type CommandResult =
 
 /** Commands listed by `help`, in display order. */
 export const HELP_ITEMS = [
+  { command: "help", description: "show this list" },
   { command: "about", description: "who i am" },
   { command: "projects", description: "things i've built" },
   { command: "writing", description: "articles on medium" },

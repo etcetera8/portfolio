@@ -164,6 +164,7 @@ describe("complete", () => {
 describe("HELP_ITEMS", () => {
   it("lists the commands shown by help, each of which parses", () => {
     expect(HELP_ITEMS.map((item) => item.command)).toEqual([
+      "help",
       "about",
       "projects",
       "writing",

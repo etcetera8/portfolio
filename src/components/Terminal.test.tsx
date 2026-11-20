@@ -51,9 +51,15 @@ describe("Terminal", () => {
     renderTerminal();
     expect(screen.getByRole("heading", { level: 1, name: "PARKER T. LINDLEY" })).toBeInTheDocument();
     expect(screen.getByText("AVAILABLE COMMANDS (type or click)")).toBeInTheDocument();
-    for (const name of ["about", "projects", "writing", "links", "clear", "logout"]) {
+    for (const name of ["help", "about", "projects", "writing", "links", "clear", "logout"]) {
       expect(screen.getByRole("button", { name })).toBeInTheDocument();
     }
+  });
+
+  it("prints the list again when the help chip is clicked", () => {
+    renderTerminal();
+    fireEvent.click(screen.getByRole("button", { name: "help" }));
+    expect(screen.getAllByText("AVAILABLE COMMANDS (type or click)")).toHaveLength(2);
   });
 
   it("runs a command when its chip is clicked", () => {
