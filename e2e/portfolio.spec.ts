@@ -128,6 +128,20 @@ test("draw P, T and L, then open a project, and the unlock survives a reload", a
   await expect(page.getByTestId("pattern-pad")).toHaveCount(0);
 });
 
+test("the TrainerRoad screen recording loads and plays", async ({ page, browserName }) => {
+  test.skip(browserName !== "webkit", "Playwright's Chromium build cannot decode H.264");
+  await seedUnlocked(page);
+  await page.goto("/projects/trainerroad-onboarding/");
+
+  const video = page.locator("video.media");
+  await expect(video).toBeVisible();
+  await expect(video).toHaveAttribute("aria-label", /^Screen recording of the TrainerRoad onboarding flow/);
+  const read = <T>(pick: (el: HTMLVideoElement) => T) => video.evaluate(pick);
+  await expect.poll(() => read((el) => el.videoWidth)).toBe(1280);
+  // Muted, so it may start by itself.
+  await expect.poll(() => read((el) => el.currentTime)).toBeGreaterThan(0);
+});
+
 test("a wrong pattern is denied and the step stays put", async ({ page }) => {
   await page.goto("/");
   const pad = page.getByTestId("pattern-pad");
@@ -282,6 +296,12 @@ test("typed commands work", async ({ page }) => {
   await prompt.fill("nonsense");
   await prompt.press("Enter");
   await expect(page.getByText("command not found: nonsense. type help")).toBeVisible();
+
+  // "open project 2" is the same as "open 2": the second project in the list.
+  await prompt.fill("open project 2");
+  await prompt.press("Enter");
+  await expect(page.getByRole("heading", { name: "Copy Pasta" })).toBeVisible();
+  await expect(page).toHaveURL(/\/projects\/copy-pasta\/$/);
 });
 
 test("clicking a project's name in the list opens it, not only the chip", async ({ page }) => {
@@ -420,16 +440,15 @@ test("canonical, robots, sitemap and robots.txt are right", async ({ page, reque
   expect(project.ogUrl).toBe(`${origin}/projects/seattle-311/`);
   expect(project.robotsContent).not.toContain("noindex");
 
-  const draft = await head("/projects/trainerroad-onboarding/");
-  expect(draft.canonical).toBe(`${origin}/projects/trainerroad-onboarding/`);
-  expect(draft.robots).toBeGreaterThan(0);
-  expect(draft.robotsContent).toContain("noindex");
+  const recorded = await head("/projects/trainerroad-onboarding/");
+  expect(recorded.canonical).toBe(`${origin}/projects/trainerroad-onboarding/`);
+  expect(recorded.robotsContent).not.toContain("noindex");
 
   const sitemap = await (await request.get("/sitemap.xml")).text();
   const urls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
   expect(urls).toContain(`${origin}/`);
   expect(urls).toContain(`${origin}/projects/seattle-311/`);
-  expect(urls).not.toContain(`${origin}/projects/trainerroad-onboarding/`);
+  expect(urls).toContain(`${origin}/projects/trainerroad-onboarding/`);
   for (const url of urls) {
     expect(url.startsWith(`${origin}/`)).toBe(true);
     expect(url.endsWith("/")).toBe(true);

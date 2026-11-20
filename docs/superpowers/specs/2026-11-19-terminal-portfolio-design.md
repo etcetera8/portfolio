@@ -117,6 +117,7 @@ The gate is a toy. All content is present in the delivered HTML so search engine
 - Input is trimmed and case-insensitive.
 - Unknown input prints `command not found: <input>. type help`.
 - `open` with no argument, or one that matches nothing, prints a usage line listing valid names.
+- The word `project` may come between `open` and its argument: `open project 2` is the same as `open 2`. Tab completion works after it too.
 - External links open in a new tab with `rel="noopener noreferrer"`.
 
 ### Clicking
@@ -148,11 +149,11 @@ Content lives in typed data files. Adding a project or article is one entry.
 
 | Slug | Title | Stack | Links | Media |
 |---|---|---|---|---|
-| `trainerroad-onboarding` | TrainerRoad onboarding | placeholder | none yet | placeholder slot for a 10 to 20 second muted MP4/WebM loop |
+| `trainerroad-onboarding` | TrainerRoad onboarding | React, TypeScript, MobX, C#, .NET | none | 100-second muted screen recording of the flow, 1280x736 H.264 MP4 |
 | `seattle-311` | Seattle 311 | TypeScript | live site `https://etcetera8.github.io/seattle-311/`, then `https://github.com/etcetera8/seattle-311` | screenshot of the live site |
 | `copy-pasta` | Copy Pasta | TypeScript | live site `https://copypastaformac.com/`, then `https://github.com/etcetera8/copy-pasta` | screenshot of the live site |
 
-Descriptions for the two repos start from their GitHub descriptions ("A map displaying Seattle area 311 data"; "A clipboard utility app. Save copy history for up to seven days, search copy history."). Role, stack and description for TrainerRoad are placeholder text until Parker supplies them.
+Descriptions for the two repos start from their GitHub descriptions ("A map displaying Seattle area 311 data"; "A clipboard utility app. Save copy history for up to seven days, search copy history."). For TrainerRoad, Parker led the project and wrote almost all of it; the role reads "Project lead and primary developer". Its recording has the date-of-birth values on the Profile step painted over.
 
 When a project has a deployed site, its `live site` link comes first, before the source link.
 
@@ -260,7 +261,7 @@ Boundaries:
 
 ## Testing
 
-- **Unit (Vitest):** `pattern.ts`: each shape passes when drawn forwards, backwards, in a different stroke order and with retracing; near-misses fail (missing segment, extra segment, wrong initial); pass-through keys are inserted. `commands.ts`: every command and alias, case and whitespace handling, `open` by name and by number, bad arguments, unknown input. `unlock.ts`: behaviour when storage throws.
+- **Unit (Vitest):** `pattern.ts`: each shape passes when drawn forwards, backwards, in a different stroke order and with retracing; near-misses fail (missing segment, extra segment, wrong initial); pass-through keys are inserted. `commands.ts`: every command and alias, case and whitespace handling, `open` by name and by number, with and without the word `project`, bad arguments, unknown input. `unlock.ts`: behaviour when storage throws.
 - **Component (React Testing Library):** gate shows the title, prompt, guide and progress bar and advances them through three stages, denies a wrong pattern without moving back, accepts the typed equivalent; the guide traces each letter; the install text reveals, skips and hands over to the shell; terminal prints output for clicks and typed input; history and tab completion.
 - **Browser (Playwright):** run against the real static export in Chromium at a desktop size and a phone size, and in WebKit at an iPhone size. Covers drawing P, T and L and opening a project; a real unlock surviving a reload; denial; the guide, progress bar and install text at each step; the typed field appearing on focus; direct project links; the typed equivalent; the gate fitting a 320x568 screen; `logout`; typed commands; no sideways scroll at 320px; reduced motion; the no-JavaScript page; page metadata, sitemap and robots; the 404 page; and, in Chromium's phone emulation, drawing with real touch events.
 
@@ -268,7 +269,6 @@ Not covered by automation, and to be checked by hand: drawing with a finger on r
 
 ## Out of scope
 
-- The TrainerRoad recording, final bio text and TrainerRoad project copy (placeholders now, supplied later).
 - Choosing a host or domain and deploying. The build output works on any static host.
 - CMS, automatic Medium sync, analytics, contact form.
 - Extra hidden commands or bonus content.

@@ -39,15 +39,17 @@ export const projects: readonly Project[] = [
   },
   {
     slug: "trainerroad-onboarding",
-    draft: true,
     title: "TrainerRoad onboarding",
     summary: "shipped onboarding flow",
-    // Placeholder copy below. Replace role, stack and description with final text,
-    // then add `media` once the recording exists.
-    role: "role to be added",
-    stack: ["stack to be added"],
+    role: "Project lead and primary developer",
+    stack: ["React", "TypeScript", "MobX", "C#", ".NET"],
     description:
-      "Placeholder. A short write-up of the onboarding flow, what I owned, and what it changed will go here.",
+      "The onboarding flow for TrainerRoad, a cycling training platform. It takes a rider from connecting their training platforms, through importing and analysing their ride history, to choosing how they want to train. I led the project and wrote almost all of it: a React and TypeScript front end with MobX for state management, served by a C#/.NET API.",
     links: [],
+    media: {
+      kind: "video",
+      src: "/media/trainerroad-onboarding.mp4",
+      alt: "Screen recording of the TrainerRoad onboarding flow: a welcome screen, profile and preferences, connecting Strava, Garmin and Zwift, importing ride history, a power profile chart, a power ranking, AI FTP detection, choosing a training path, and the finished Career page.",
+    },
   },
 ];

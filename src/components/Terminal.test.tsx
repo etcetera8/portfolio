@@ -77,11 +77,16 @@ describe("Terminal", () => {
     expect(window.location.pathname).toBe("/projects/seattle-311/");
   });
 
-  it("shows a placeholder slot for a project that has no media yet", () => {
-    renderTerminal();
+  it("shows a project's screen recording as a video", () => {
+    vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
+    const { container } = renderTerminal();
     run("open trainerroad-onboarding");
-    expect(screen.getByText("[ media: TrainerRoad onboarding ]")).toBeInTheDocument();
-    expect(screen.queryByRole("img")).toBeNull();
+    expect(screen.getByRole("heading", { level: 2, name: "TrainerRoad onboarding" })).toBeInTheDocument();
+    expect(screen.getByText("React, TypeScript, MobX, C#, .NET")).toBeInTheDocument();
+    const video = container.querySelector("video")!;
+    expect(video).toHaveAttribute("src", "/media/trainerroad-onboarding.mp4");
+    expect(video).toHaveAccessibleName(/^Screen recording of the TrainerRoad onboarding flow/);
+    expect(screen.queryByText("[ media: TrainerRoad onboarding ]")).toBeNull();
   });
 
   it("opens a project from its chip", () => {

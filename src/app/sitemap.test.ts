@@ -4,11 +4,11 @@ import sitemap from "@/app/sitemap";
 import { SITE_URL } from "@/lib/site";
 
 describe("sitemap and robots", () => {
-  it("lists the home page and non-draft projects, with trailing slashes", () => {
+  it("lists the home page and every project, with trailing slashes", () => {
     const urls = sitemap().map((entry) => entry.url);
     expect(urls).toContain(`${SITE_URL}/`);
     expect(urls).toContain(`${SITE_URL}/projects/seattle-311/`);
-    expect(urls).not.toContain(`${SITE_URL}/projects/trainerroad-onboarding/`);
+    expect(urls).toContain(`${SITE_URL}/projects/trainerroad-onboarding/`);
     for (const url of urls) expect(url.endsWith("/")).toBe(true);
   });
 

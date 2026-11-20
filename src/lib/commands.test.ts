@@ -40,14 +40,25 @@ describe("parseCommand", () => {
     expect(parseCommand("open 3", SLUGS)).toEqual({ kind: "project", slug: "copy-pasta" });
   });
 
+  it("accepts the word project before the name or number", () => {
+    expect(parseCommand("open project 2", SLUGS)).toEqual({ kind: "project", slug: "seattle-311" });
+    expect(parseCommand("open project copy-pasta", SLUGS)).toEqual({
+      kind: "project",
+      slug: "copy-pasta",
+    });
+    expect(parseCommand("OPEN Project 3", SLUGS)).toEqual({ kind: "project", slug: "copy-pasta" });
+  });
+
   it("returns usage when open has no argument", () => {
     expect(parseCommand("open", SLUGS)).toEqual({ kind: "openUsage", arg: null });
+    expect(parseCommand("open project", SLUGS)).toEqual({ kind: "openUsage", arg: null });
   });
 
   it("returns usage when open matches nothing", () => {
     expect(parseCommand("open nope", SLUGS)).toEqual({ kind: "openUsage", arg: "nope" });
     expect(parseCommand("open 0", SLUGS)).toEqual({ kind: "openUsage", arg: "0" });
     expect(parseCommand("open 4", SLUGS)).toEqual({ kind: "openUsage", arg: "4" });
+    expect(parseCommand("open project 9", SLUGS)).toEqual({ kind: "openUsage", arg: "9" });
   });
 
   it("reports unknown input as typed", () => {
@@ -66,6 +77,13 @@ describe("parseCommand", () => {
 describe("parseCommand details", () => {
   it("tries a slug name before a number", () => {
     expect(parseCommand("open 311", ["a", "311"])).toEqual({ kind: "project", slug: "311" });
+  });
+
+  it("opens a project that is itself named project", () => {
+    const slugs = ["a", "project"];
+    expect(parseCommand("open project", slugs)).toEqual({ kind: "project", slug: "project" });
+    expect(parseCommand("open project 1", slugs)).toEqual({ kind: "project", slug: "project" });
+    expect(complete("open pro", slugs)).toBe("open project");
   });
 
   it("keeps the typed case in openUsage", () => {
@@ -129,6 +147,12 @@ describe("complete", () => {
   it("completes a project name after open", () => {
     expect(complete("open sea", SLUGS)).toBe("open seattle-311");
     expect(complete("open t", SLUGS)).toBe("open trainerroad-onboarding");
+  });
+
+  it("completes a project name after open project", () => {
+    expect(complete("open project sea", SLUGS)).toBe("open project seattle-311");
+    expect(complete("open project ", SLUGS)).toBeNull();
+    expect(complete("open project zzz", SLUGS)).toBeNull();
   });
 
   it("returns null when the project prefix is ambiguous or unknown", () => {

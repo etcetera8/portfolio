@@ -61,7 +61,6 @@ describe("content", () => {
     for (const project of projects) {
       expect([undefined, true, false]).toContain(project.draft);
     }
-    expect(projects.find((project) => project.slug === "trainerroad-onboarding")?.draft).toBe(true);
   });
 
   it("only links to https URLs", () => {

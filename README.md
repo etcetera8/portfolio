@@ -49,7 +49,7 @@ All content is in `src/content/`:
 - `articles.ts`: writing, with year and link.
 - `links.ts`: profile links.
 
-`draft: true` on a project marks its copy as placeholder. A draft still appears in the shell, but its page is `noindex`, it is left out of the sitemap, the home page's plain-HTML block shows only its title and summary, and its page description and link-preview text use the summary instead of the description.
+`draft: true` on a project marks its copy as placeholder; no project is a draft at the moment. A draft still appears in the shell, but its page is `noindex`, it is left out of the sitemap, the home page's plain-HTML block shows only its title and summary, and its page description and link-preview text use the summary instead of the description.
 
 To add media to a project, put the file under `public/` (for example `public/media/seattle-311.mp4`, which is served at `/media/seattle-311.mp4`) and add `media` to the project:
 
@@ -58,10 +58,6 @@ media: { kind: "video", src: "/media/seattle-311.mp4", alt: "Short description o
 ```
 
 `kind` is `"video"` or `"image"`. Images display in a 16:9 box, so a 1280x720 screenshot fits exactly. Without `media`, a placeholder slot is shown. A video that fails to load falls back to the placeholder.
-
-### Placeholders still to replace
-
-- The TrainerRoad onboarding project: `role`, `stack`, `description` and its screen recording (`media`). Remove `draft: true` when done.
 
 ## How the unlock works
 
